@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# This bash script uses the current working directory to create a simple
+# script to run the cfdoit command anywhere in a user's workspace.
+
+cmdScript=$(pwd)/.venv/bin/cfdoit
+
+cat << CMD_SCRIPT > $HOME/.local/bin/cfdoit
+#!/bin/sh
+
+# This shell script was created by the cfdoit tool
+#       './scripts/installEditableCfdotiCommand'
+# script.
+
+exec $cmdScript \$@
+CMD_SCRIPT
+
+chmod a+x $HOME/.local/bin/cfdoit
+
+echo ""
+echo "Editable cfdoit command has been created"
+echo ""
