@@ -1,0 +1,57 @@
+
+
+rule download
+  command = curl --location --output $out $url
+
+rule extract
+  command = tar xf $in --strip-components=1 --directory=$dir
+
+
+## XEUS
+
+build packages/xeus.tar.gz : download 
+  url = https://github.com/jupyter-xeus/xeus/archive/refs/tags/3.0.5.tar.gz
+
+build xeus/CMakeLists.txt : extract packages/xeus.tar.gz
+  dir = xeus
+
+## XEUS-ZMQ
+
+build packages/xeus-zmq.tar.gz : download
+  url = https://github.com/jupyter-xeus/xeus-zmq/archive/refs/tags/1.0.2.tar.gz
+
+build xeus-zmq/CMakeLists.txt : extract packages/xeus-zmq.tar.gz
+  dir = xeus-zmq
+
+## libZMQ
+
+build packages/libzmq.tar.gz : download
+  url = https://github.com/zeromq/libzmq/archive/refs/tags/v4.3.4.tar.gz
+
+build libzmq/CMakeLists.txt : extract packages/libzmq.tar.gz
+  dir = libzmq
+
+## CPPZMQ
+
+build packages/cppzmq.tar.gz : download
+  url = https://github.com/zeromq/cppzmq/archive/refs/tags/v4.9.0.tar.gz
+
+
+build cppzmq/CMakeLists.txt : extract packages/cppzmq.tar.gz
+  dir = cppzmq
+
+## nl-json
+
+build packages/nlohmann_json.tar.gz : download
+  url = https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.tar.gz
+
+build nl-json/CMakeLists.txt : extract packages/nlohmann_json.tar.gz
+  dir = nl-json
+
+## XTL
+
+build packages/xtl.tar.gz : download
+  url = https://github.com/xtensor-stack/xtl/archive/refs/tags/0.7.5.tar.gz
+
+build xtl/CMakeLists.txt : extract packages/xtl.tar.gz
+  dir = xtl

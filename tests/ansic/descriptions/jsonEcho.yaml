@@ -1,0 +1,24 @@
+
+projects:
+  jsonEcho:
+    targets:
+      cmd:
+        - jsonEchoKernel
+    dependencies:
+      packages:
+        - xeus
+        - xeus-zmq
+        - nl-json
+        - xtl
+      src:
+        - main.cpp
+        - jsonEcho.cpp
+      libs:
+        - 'xeus-zmq.a'
+        - 'xeus.a'
+        - 'zmq.a'
+        - 'crypto'
+        - 'sodium'
+        - 'uuid'
+    tools:
+      - cpp

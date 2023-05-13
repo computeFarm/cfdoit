@@ -1,0 +1,25 @@
+#! ../../../.venv/bin/python
+
+import unittest
+import jupyter_kernel_test
+
+class JsonEchoKernelTests(jupyter_kernel_test.KernelTests) :
+
+  kernel_name = "json-echo"
+
+  language_name = "JoyLoL-JSON"
+
+  #code_hello_world = '{ "text": "Hello world" }'
+
+  code_execute_result = [
+    {
+      'code'   : '{ "text": "Hello world" }',
+      'result' :
+"""{
+  "text": "Hello world"
+}"""
+    }
+  ]
+
+if __name__ == '__main__':
+    unittest.main()

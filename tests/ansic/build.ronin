@@ -1,0 +1,25 @@
+#!/home/stg/GitTools/computeFarm/cfdoit/.venv/bin/python
+
+from ronin.cli import cli
+from ronin.contexts import new_context
+from ronin.gcc import GccBuild
+from ronin.phases import Phase
+from ronin.pkg_config import Package
+from ronin.projects import Project
+from ronin.utils.paths import glob
+
+import roninExts
+
+with new_context() as ctx :
+  download = Project('jsonEcho download external packages')
+
+  Phase(
+    project=download,
+    name='build',
+    executor=GccBuild(),
+    inputs=glob('xeus-json/src/*.cpp'),
+    output='jsonEcho'
+  )
+
+  cli(project)
+

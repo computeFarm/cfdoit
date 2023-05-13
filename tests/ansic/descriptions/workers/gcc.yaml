@@ -1,0 +1,8 @@
+
+workers:
+  gcc:
+    platform: amd64
+    capabilities:
+      - gcc
+      - cmake
+      - ninja

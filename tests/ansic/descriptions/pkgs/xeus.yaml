@@ -1,0 +1,44 @@
+packages:
+  xeus:
+    # https://github.com/jupyter-xeus/xeus
+
+    repoProvider: github
+    repoPath: jupyter-xeus/xeus
+    version: '3.0.5'
+
+    targets:
+      libs:
+        - 'xeus.a'
+      includes:
+        - 'xeus/xkernel.hpp'
+        - 'xeus/xkernel_configuration.hpp'
+        - 'xeus/xhelper.hpp'
+
+    dependencies:
+      packages:
+        - xeus-zmq
+        - nlohmann
+        - xtl
+
+      libs:
+        - 'xeus-zmq.a'
+
+      includes:
+        - 'xeus-zmq/zserver_zmg.hpp'
+        - 'nlohmann/json.hpp'
+        - 'xtl/xhash.hpp'
+
+    tools:
+      - cpp
+      - cmake
+      - ninja
+      - make
+
+    actions:
+      -  mkdir -p $dir/build
+      -  cd $dir/build
+      - - cmake ..
+        - -D CMAKE_GENERATOR=Ninja
+        - -D CMAKE_PREFIX_PATH=../../local
+        - -D CMAKE_INSTALL_PREFIX=../../local
+      -  ninja -j 2 install

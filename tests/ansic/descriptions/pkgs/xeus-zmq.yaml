@@ -1,0 +1,39 @@
+packages:
+  xeus-zmq:
+    # https://github.com/jupyter-xeus/xeus-zmq
+
+    repoProvider: github
+    repoPath: jupyter-xeus/xeus-zmq
+    version: '1.0.2'
+
+    targets:
+      libs:
+        - 'xeus-zmq.a'
+        - 'xmq.a'
+      includes:
+        - 'xeus-zmq/zserver_zmg.hpp'
+
+    dependencies:
+      packages:
+        - libzmq
+
+      libs:
+        - 'zmq.a'
+
+      includes:
+        - 'zmq.h'
+
+    tools:
+      - cpp
+      - cmake
+      - ninja
+      - make
+
+    actions:
+      -  mkdir -p $dir/build
+      -  cd $dir/build
+      - - cmake ..
+        - -D CMAKE_GENERATOR=Ninja
+        - -D CMAKE_PREFIX_PATH=../../local
+        - -D CMAKE_INSTALL_PREFIX=../../local
+      -  ninja -j 2 install

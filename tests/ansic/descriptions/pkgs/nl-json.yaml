@@ -1,0 +1,26 @@
+packages:
+  nl-json:
+    # https://github.com/nlohmann/json
+
+    repoProvider: github
+    repoPath: nlohmann/json
+    version: 'v3.11.2'
+
+    targets:
+      includes:
+        - nlohmann/json.hpp
+
+    tools:
+      - cpp
+      - cmake
+      - ninja
+      - make
+
+    actions:
+      -  mkdir -p $dir/build
+      -  cd $dir/build
+      - - cmake ..
+        - -D CMAKE_GENERATOR=Ninja
+        - -D CMAKE_PREFIX_PATH=../../local
+        - -D CMAKE_INSTALL_PREFIX=../../local
+      -  ninja -j 2 install

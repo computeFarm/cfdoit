@@ -1,0 +1,26 @@
+packages:
+  xtl:
+    # https://github.com/xtensor-stack/xtl
+
+    repoProvider: github
+    repoPath: xtensor-statck/xtl
+    version: '0.7.5'
+
+    targets:
+      includes:
+        - xtl/xhash.hpp
+
+    tools:
+      - cpp
+      - cmake
+      - ninja
+      - make
+
+    actions:
+      -  mkdir -p $dir/build
+      -  cd $dir/build
+      - - cmake ..
+        - -D CMAKE_GENERATOR=Ninja
+        - -D CMAKE_PREFIX_PATH=../../local
+        - -D CMAKE_INSTALL_PREFIX=../../local
+      -  ninja -j 2 install

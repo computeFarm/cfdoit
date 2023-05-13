@@ -1,0 +1,9 @@
+{
+  "argv" : [
+    "jsonEchoKernel",
+    "-f",
+    "{connection_file}"
+  ],
+  "display_name" : "JSON echo",
+  "langauge" : "JoyLoL-JSON"
+}

@@ -1,0 +1,26 @@
+packages:
+  cppzmq:
+    # https://github.com/zeromq/cppzmq
+
+    repoProvider: github
+    repoPath: zeromq/cppzmq
+    version: 'v4.9.0'
+
+    targets:
+      includes:
+        - 'zmq.h'
+
+    tools:
+      - cpp
+      - cmake
+      - ninja
+      - make
+
+    actions:
+      -  mkdir -p $dir/build
+      -  cd $dir/build
+      - - cmake ..
+        - -D CMAKE_GENERATOR=Ninja
+        - -D CMAKE_PREFIX_PATH=../../local
+        - -D CMAKE_INSTALL_PREFIX=../../local
+      -  ninja -j 2 install

@@ -1,0 +1,83 @@
+# A hand built ninja build file to compile the json-echo project
+
+# Get the source code dependencies:
+
+# get the sources using curl
+
+#rule mkdirs 
+#  command = mkdir -p $out
+
+rule make_install
+  command = mkdir -p $dir/build && cd $dir/build && $
+    cmake .. -D CMAKE_GENERATOR=Ninja -D CMAKE_PREFIX_PATH=../../local -D CMAKE_INSTALL_PREFIX=../../local && $
+    ninja -j 2 install
+
+#build packages : mkdirs
+
+#build local : mkdirs
+
+## XEUS
+
+build local/lib/libxeus.so local/include/xeus/xinterpreter.hpp $
+  local/include/xeus/xkernel.hpp $
+  local/include/xeus/xkernel_configuration.hpp $
+  local/include/xeus/xhelper.hpp : $
+  make_install xeus/CMakeLists.txt | $
+  local/include/nlohmann/json.hpp local/include/xtl/xhash.hpp
+  dir = xeus
+
+## XEUS-ZMQ
+
+build local/lib/libxeus-zmq.so local/include/xeus-zmq/xserver_zmq.hpp : $
+  make_install xeus-zmq/CMakeLists.txt | $
+  local/lib/libxeus.so local/lib/libzmq.so local/include/zmq.h $
+  local/include/nlohmann/json.hpp local/include/xtl/xhash.hpp
+  dir = xeus-zmq
+
+## libZMQ
+
+build local/lib/libzmq.so : make_install libzmq/CMakeLists.txt
+  dir = libzmq
+
+## CPPZMQ
+
+build local/include/zmq.h : make_install cppzmq/CMakeLists.txt
+  dir = cppzmq
+
+## nl-json
+
+build local/include/nlohmann/json.hpp : make_install nl-json/CMakeLists.txt
+  dir = nl-json
+
+## XTL
+
+build local/include/xtl/xhash.hpp : make_install xtl/CMakeLists.txt
+  dir = xtl
+
+########################################################################
+# Compile the JsonEcho kernel
+
+cFlags = -Wall
+includeFlags = -I local/include
+linkFlags = -L local/lib -lcrypto -lsodium -luuid
+
+rule cc
+  command = g++ $cFlags $includeFlags -c $in -o $out
+
+rule link
+  command = g++ -o $out $in $linkFlags
+
+build jsonEcho.o : cc ../xeus-json/src/jsonEcho.cpp | $
+  ../xeus-json/src/jsonEcho.hpp local/include/xeus/xinterpreter.hpp $
+  local/include/nlohmann/json.hpp local/include/xeus/xhelper.hpp
+
+build main.o : cc ../xeus-json/src/main.cpp | $
+  ../xeus-json/src/jsonEcho.hpp $
+  local/include/xeus/xkernel.hpp $
+  local/include/xeus/xkernel_configuration.hpp $
+  local/include/xeus-zmq/xserver_zmq.hpp
+
+build jsonEchoKernel : link main.o jsonEcho.o $
+  local/lib/libxeus-zmq.a $
+  local/lib/libxeus.a $
+  local/lib/libzmq.a

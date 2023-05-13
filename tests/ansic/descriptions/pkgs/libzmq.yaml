@@ -1,0 +1,26 @@
+packages:
+  libzmq:
+    # https://github.com/zeromq/libzmq
+
+    repoProvider: github
+    repoPath: zeromq/libzmq
+    version: 'v4.3.4'
+
+    targets:
+      libs:
+        - 'zmq.a'
+
+    tools:
+      - cpp
+      - cmake
+      - ninja
+      - make
+
+    actions:
+      -  mkdir -p $dir/build
+      -  cd $dir/build
+      - - cmake ..
+        - -D CMAKE_GENERATOR=Ninja
+        - -D CMAKE_PREFIX_PATH=../../local
+        - -D CMAKE_INSTALL_PREFIX=../../local
+      -  ninja -j 2 install
