@@ -3,6 +3,8 @@ from collections import defaultdict
 import copy
 import glob
 import os
+import platform
+import re
 import yaml
 
 def recursivelyLoadDescriptions(aPath, descriptions) :
@@ -81,3 +83,97 @@ class Config :
       recursivelyLoadDescriptions(aDescPath, descriptions)
 
     Config.descriptions = descriptions
+
+  _varRe = re.compile(r'\${?(\w+)}?')
+
+  def _expandEnv(curEnvDict, aListOfEnvDicts, aPkgName) :
+    resultListOfEnvDicts = []
+    for anEnvDict in aListOfEnvDicts :
+      curKeyList = []
+      for aKey, aValue in anEnvDict.items() :
+        aValStr = Config._varRe.sub(r"{\1}", aValue)
+        try :
+          curEnvDict[aKey] = aValStr.format_map(curEnvDict)
+          curKeyList.append(aKey)
+        except KeyError as err :
+          print("-------------------------------------------------------------")
+          print(f"In package: {aPkgName}")
+          print(f"Missing key: {err}")
+          print(f"  while trying to expand:")
+          print(f"  [{aKey}] : [{aValue}]")
+          print("-------------------------------------------------------------")
+      theEnv = {}
+      for aKey in curKeyList :
+        theEnv[aKey] = curEnvDict[aKey]
+      resultListOfEnvDicts.append(theEnv)
+    return resultListOfEnvDicts
+
+  def _expandActions(curEnvDict, someActions, aPkgName) :
+    theActions = []
+    for anActionLine in someActions :
+      if isinstance(anActionLine, str) :
+        anActionStr = Config._varRe.sub(r"{\1}", anActionLine)
+        try :
+          theActions.append(anActionStr.format_map(curEnvDict))
+        except KeyError as err :
+          print("-------------------------------------------------------------")
+          print(f"In package: {aPkgName}")
+          print(f"Missing key: {err}")
+          print(f"  while trying to expand:")
+          print(f"  [anActionLine]")
+          print("-------------------------------------------------------------")
+      elif isinstance(anActionLine, list) :
+        theActionLine = []
+        for anActionPart in anActionLine :
+          anActionStr = Config._varRe.sub(r"{\1}", anActionPart)
+          try :
+            theActionLine.append(anActionStr.format_map(curEnvDict))
+          except KeyError as err :
+            print("-------------------------------------------------------------")
+            print(f"In package: {aPkgName}")
+            print(f"Missing key: {err}")
+            print(f"  while trying to expand:")
+            print(f"  [anActionLine]")
+            print("-------------------------------------------------------------")
+        theActions.append(theActionLine)
+    return theActions
+
+  def _mergeSnipets(theSnipets, snipets) :
+    if 'actions' in snipets :
+      theSnipets['actions'].extend(snipets['actions'])
+    if 'tools' in snipets :
+      theSnipets['tools'].extend(snipets['tools'])
+    if 'environment' in snipets :
+      theSnipets['environment'].extend(snipets['environment'])
+
+  def getSnipets(aSnipetName, aPkgName, aPkgDef, initialEnvDict) :
+    theSnipets = {
+      'actions'     : [],
+      'tools'       : [],
+      'environment' : []
+    }
+
+    if 'actionSnipets' not in Config.descriptions : return theSnipets
+    actionSnipets = Config.descriptions['actionSnipets']
+
+    thePlatform = platform.system().lower()
+    if thePlatform not in actionSnipets : return theSnipets
+    actionSnipets = actionSnipets[thePlatform]
+
+    if 'all' in actionSnipets :
+      Config._mergeSnipets(theSnipets, actionSnipets['all'])
+
+    if aSnipetName in actionSnipets :
+      Config._mergeSnipets(theSnipets, actionSnipets[aSnipetName])
+
+    Config._mergeSnipets(theSnipets, aPkgDef)
+
+    theSnipets['environment'] = Config._expandEnv(
+      initialEnvDict, theSnipets['environment'], aPkgName
+    )
+    theSnipets['actions'] = Config._expandActions(
+      initialEnvDict, theSnipets['actions'], aPkgName
+    )
+    #print(yaml.dump(theSnipets))
+    return theSnipets
+  

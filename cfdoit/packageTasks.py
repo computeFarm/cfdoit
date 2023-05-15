@@ -17,13 +17,16 @@ def checkVersion(aVersion) :
   return versionChecker
 
 def gen_downloadInstallPackage(aName, aPkgDef, pkgsDir, dlsDir) :
+  ""
+  
+  """
   #print("----------------------------------")
   #print(aName)
   #print(yaml.dump(aPkgDef))
   pkgDir       = os.path.join(pkgsDir, aName)
   repoPath     = aPkgDef['repoPath']
   repoProvider = aPkgDef['repoProvider']
-  repoVersion  = aPkgDef['version']
+  repoVersion  = aPkgDef['repoVersion']
   if repoProvider != 'github' :
     print("WARNING: We can only deal with GitHub packages at the moment!")
     return
@@ -48,7 +51,23 @@ def gen_downloadInstallPackage(aName, aPkgDef, pkgsDir, dlsDir) :
     'uptodate' : [ checkVersion(repoVersion) ],
     'targets'  : [dlName]
   }
+  """
 
+  #print(yaml.dump(Config.getSnipets('gitHubDownload', {})))
+  theEnv = {
+    'pkgName'     : aName,
+    'repoVersion' : aPkgDef['repoVersion'],
+    'repoPath'    : aPkgDef['repoPath']
+  }
+  theSnipets = Config.getSnipets('gitHubDownload', aName, {}, theEnv)
+  yield {
+    'basename' : f"download-extract-{aName}",
+    'actions'  : [ WorkerTask(theSnipets) ],
+    'uptodate' : [ checkVersion(aPkgDef['repoVersion']) ],
+    'targets'  : [ theEnv['dlName'] ]
+  }
+
+  """
   theTargets = []
   if 'targets' in aPkgDef :
     if 'libs' in aPkgDef['targets'] :
@@ -89,6 +108,7 @@ def gen_downloadInstallPackage(aName, aPkgDef, pkgsDir, dlsDir) :
     'targets'  : theTargets,
     'file_dep' : theDeps
   }
+"""
 
 def gen_downloadInstallPackages(pkgsDict) :
   pkgsDir = "packages"

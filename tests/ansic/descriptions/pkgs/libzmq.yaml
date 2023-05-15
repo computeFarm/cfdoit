@@ -4,7 +4,7 @@ packages:
 
     repoProvider: github
     repoPath: zeromq/libzmq
-    version: 'v4.3.4'
+    repoVersion: 'v4.3.4'
 
     targets:
       libs:

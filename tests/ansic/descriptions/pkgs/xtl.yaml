@@ -4,7 +4,7 @@ packages:
 
     repoProvider: github
     repoPath: xtensor-statck/xtl
-    version: '0.7.5'
+    repoVersion: '0.7.5'
 
     targets:
       includes:

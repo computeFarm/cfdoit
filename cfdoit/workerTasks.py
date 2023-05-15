@@ -12,9 +12,11 @@ def compileActionScript(someEnvs, someActions) :
   actionScript.append("#!/bin/sh")
 
   actionScript.append("# export the environment...")
-  if isinstance(someEnvs, dict) :
-    for aKey, aValue in someEnvs.items() :
-      actionScript.append(f"export {aKey}=\"{aValue}\"")
+  if isinstance(someEnvs, list) :
+    for anEnv in someEnvs :
+      if isinstance(anEnv, dict) :
+        for aKey, aValue in anEnv.items() :
+          actionScript.append(f"export {aKey}=\"{aValue}\"")
 
   actionScript.append("# now run the actions...")
   for anAction in someActions :
@@ -26,10 +28,13 @@ def compileActionScript(someEnvs, someActions) :
   return "\n\n".join(actionScript)
 
 class WorkerTask(BaseAction) :
-  def __init__(self, theActions, theTools, theEnv=None) :
-    self.actions = theActions
-    self.tools   = theTools
-    self.env     = theEnv
+  def __init__(self, actionsDict) :
+    self.actions = []
+    if 'actions' in actionsDict : self.actions = actionsDict['actions']
+    self.tools   = []
+    if 'tools' in actionsDict : self.tools = actionsDict['tools']
+    self.env     = {}
+    if 'environment' in actionsDict: self.env = actionsDict['environment']
     self.result  = None
     self.values  = {}
 

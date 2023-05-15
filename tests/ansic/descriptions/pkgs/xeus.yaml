@@ -4,7 +4,7 @@ packages:
 
     repoProvider: github
     repoPath: jupyter-xeus/xeus
-    version: '3.0.5'
+    repoVersion: '3.0.5'
 
     targets:
       libs:
