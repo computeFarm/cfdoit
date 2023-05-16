@@ -1,12 +1,18 @@
 
-actionSnipets:
+taskSnipets:
+
+  # The following snipets are designed for use on a Linux machine
   linux:
+
+    # This snipet will be merged into ALL other snipets
     all:
      environment:
        - pkgsDir: packages
        - dlsDir: $pkgsDir/downloads
        - pkgDir: $pkgsDir/$pkgName
        - installPrefix: ../../local
+
+    # download and extract the *.tar.gz sources from a GitHub repository
     gitHubDownload:
       environment:
         - url: https://github.com/${repoPath}/archive/refs/tags/${repoVersion}.tar.gz
@@ -20,6 +26,8 @@ actionSnipets:
       tools:
         - curl
         - tar
+
+    # Preform a "standard" CMake compile and install
     cmakeCompile:
       actions:
         -  mkdir -p $pkgDir/build

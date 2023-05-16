@@ -16,15 +16,10 @@ packages:
 
     dependencies:
       packages:
-        - xeus-zmq
-        - nlohmann
+        - nl-json
         - xtl
 
-      libs:
-        - 'xeus-zmq.a'
-
       includes:
-        - 'xeus-zmq/zserver_zmg.hpp'
         - 'nlohmann/json.hpp'
         - 'xtl/xhash.hpp'
 
@@ -32,13 +27,13 @@ packages:
       - cpp
       - cmake
       - ninja
-      - make
 
-    actions:
-      -  mkdir -p $dir/build
-      -  cd $dir/build
-      - - cmake ..
-        - -D CMAKE_GENERATOR=Ninja
-        - -D CMAKE_PREFIX_PATH=../../local
-        - -D CMAKE_INSTALL_PREFIX=../../local
-      -  ninja -j 2 install
+    taskSnipets:
+      - snipet: gitHubDownload
+        targets: CMakeLists.txt
+      - cmakeCompile
+
+# Notes:
+
+# xeus (on linux) REQUIRES the OS packages:
+#  - uuid

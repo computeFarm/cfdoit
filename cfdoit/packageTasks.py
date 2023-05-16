@@ -1,3 +1,11 @@
+"""
+Data driven `doit` extensions and task generators using the `cfdoit` task
+descriptions
+
+While the task descriptions formally contain a package-level `taskSnipets` key,
+this key is currently NOT used. At the moment the only pattern we use
+(gitHubDownload followed by a cmakeCompile) is hardwired into the code below.
+"""
 
 import os
 import yaml
@@ -28,7 +36,6 @@ def checkVersion(aVersion) :
 
 def gen_downloadPackage(theEnv) :
   """
-
   Download and extract an external package.
 
   A generator which generates the `doit` task required to download and extract
@@ -37,12 +44,18 @@ def gen_downloadPackage(theEnv) :
 
   aName       = theEnv['pkgName']
   repoVersion = theEnv['repoVersion']
+
   theSnipets  = Config.getSnipets('gitHubDownload', aName, {}, theEnv)
+
+  pkgDir      = theEnv['pkgDir']
+  dlsDir      = theEnv['dlsDir']
+
   yield {
     'basename' : f"download-extract-{aName}",
     'actions'  : [ WorkerTask(theSnipets) ],
     'uptodate' : [ checkVersion(repoVersion) ],
-    'targets'  : [ theEnv['dlName'] ]
+    'targets'  : [ os.path.join(pkgDir, 'CMakeLists.txt') ],
+    'task_dep' : [ f"ensure-{dlsDir}-exists" ]
   }
 
 
@@ -63,22 +76,28 @@ def gen_installPackage(theEnv, aPkgDef) :
         if not aLib.endswith('.a') : 
           print("WARNING: we only work with static libraries at the moment!")
           continue
-        theTargets.append(f"local/lib/lib{aLib}")
+        theTargets.append(f"packages/local/lib/lib{aLib}")
     if 'includes' in aPkgDef['targets'] :
       for anInclude in aPkgDef['targets']['includes'] :
-        theTargets.append(f"local/include/{anInclude}")
+        theTargets.append(f"packages/local/include/{anInclude}")
   
-  theDeps = [ os.path.join(pkgDir, 'CMakeLists.txt') ]
-  if 'depends' in aPkgDef :
-    if 'libs' in aPkgDef['depends'] :
-      for aLib in aPkgDef['depends']['libs'] :
+  fileDeps = [ os.path.join(pkgDir, 'CMakeLists.txt') ]
+  taskDeps = []
+  if 'dependencies' in aPkgDef :
+    theDeps = aPkgDef['dependencies']
+    if 'libs' in theDeps :
+      for aLib in theDeps['libs'] :
         if not aLib.endswith('.a') :
           print("WARNING: we only work with static libraries at the moment!")
           continue
-        theDeps.append(f"local/lib/lib{aLib}")
-    if 'includes' in aPkgDef['depends'] :
-      for anInclude in aPkgDef['depends']['includes'] :
-        theDeps.append(f"local/include/{anInclude}")
+        fileDeps.append(f"packages/local/lib/lib{aLib}")
+    if 'includes' in theDeps :
+      for anInclude in theDeps['includes'] :
+        fileDeps.append(f"packages/local/include/{anInclude}")
+
+    if 'packages' in theDeps :
+      for aPkg in theDeps['packages'] :
+        taskDeps.append(f"compile-install-{aPkg}")
 
   theActions = []
   if 'actions' in aPkgDef : theActions = aPkgDef['actions']
@@ -94,7 +113,8 @@ def gen_installPackage(theEnv, aPkgDef) :
     'basename' : f"compile-install-{aName}",
     'actions'  : [ WorkerTask(theSnipets) ], 
     'targets'  : theTargets,
-    'file_dep' : theDeps
+    'file_dep' : fileDeps,
+    'task_dep' : taskDeps
   }
 
 def gen_downloadInstallPackages(pkgsDict) :

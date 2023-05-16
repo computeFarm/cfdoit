@@ -78,9 +78,9 @@ class WorkerTask(BaseAction) :
     if workerType == 'local' :
       # lob it over the fence and hope it works!
       actionScript = compileActionScript(self.env, self.actions)
-      print("---------------------------------------")
-      print(actionScript)
-      print("---------------------------------------")
+      #print("---------------------------------------")
+      #print(actionScript)
+      #print("---------------------------------------")
       tmpFile = tempfile.NamedTemporaryFile(prefix='cfdoit-LocalWorkerTask-', delete=False)
       tmpFile.write(actionScript.encode("utf8"))
       tmpFile.close()

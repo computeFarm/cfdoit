@@ -11,16 +11,10 @@ packages:
         - nlohmann/json.hpp
 
     tools:
-      - cpp
       - cmake
       - ninja
-      - make
 
-    actions:
-      -  mkdir -p $dir/build
-      -  cd $dir/build
-      - - cmake ..
-        - -D CMAKE_GENERATOR=Ninja
-        - -D CMAKE_PREFIX_PATH=../../local
-        - -D CMAKE_INSTALL_PREFIX=../../local
-      -  ninja -j 2 install
+    taskSnipets:
+      - snipet: gitHubDownload
+        targets: CMakeLists.txt
+      - cmakeCompile

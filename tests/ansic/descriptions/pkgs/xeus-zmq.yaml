@@ -9,31 +9,37 @@ packages:
     targets:
       libs:
         - 'xeus-zmq.a'
-        - 'xmq.a'
       includes:
         - 'xeus-zmq/zserver_zmg.hpp'
 
     dependencies:
       packages:
+        - xeus
         - libzmq
+        - cppzmq
+        - nl-json
 
       libs:
         - 'zmq.a'
+        - 'xeus.a'
 
       includes:
         - 'zmq.h'
+        - 'xeus/xkernel.hpp'
+        - 'xeus/xkernel_configuration.hpp'
+        - 'xeus/xhelper.hpp'
 
     tools:
       - cpp
       - cmake
       - ninja
-      - make
 
-    actions:
-      -  mkdir -p $dir/build
-      -  cd $dir/build
-      - - cmake ..
-        - -D CMAKE_GENERATOR=Ninja
-        - -D CMAKE_PREFIX_PATH=../../local
-        - -D CMAKE_INSTALL_PREFIX=../../local
-      -  ninja -j 2 install
+    taskSnipets:
+      - snipet: gitHubDownload
+        targets: CMakeLists.txt
+      - cmakeCompile
+
+# Notes:
+
+# xeus-zmq REQUIRES the following OS packages:
+#  - OpenSSL (libssl and libcryptop)

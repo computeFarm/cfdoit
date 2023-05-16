@@ -276,18 +276,18 @@ class Config :
       'environment' : []
     }
 
-    if 'actionSnipets' not in Config.descriptions : return theSnipets
-    actionSnipets = Config.descriptions['actionSnipets']
+    if 'taskSnipets' not in Config.descriptions : return theSnipets
+    taskSnipets = Config.descriptions['taskSnipets']
 
     thePlatform = platform.system().lower()
-    if thePlatform not in actionSnipets : return theSnipets
-    actionSnipets = actionSnipets[thePlatform]
+    if thePlatform not in taskSnipets : return theSnipets
+    taskSnipets = taskSnipets[thePlatform]
 
-    if 'all' in actionSnipets :
-      Config._mergeSnipets(theSnipets, actionSnipets['all'])
+    if 'all' in taskSnipets :
+      Config._mergeSnipets(theSnipets, taskSnipets['all'])
 
-    if aSnipetName in actionSnipets :
-      Config._mergeSnipets(theSnipets, actionSnipets[aSnipetName])
+    if aSnipetName in taskSnipets :
+      Config._mergeSnipets(theSnipets, taskSnipets[aSnipetName])
 
     Config._mergeSnipets(theSnipets, aPkgDef)
 
