@@ -8,6 +8,21 @@ import re
 import yaml
 
 def recursivelyLoadDescriptions(aPath, descriptions) :
+
+  """
+  Recursively load cfdoit task description files from aPath into the
+  descriptions dict.
+
+  Parameters:
+
+    aPath (str) The file system path to use to (recursively) load one or more
+                descriptions. If aPath ends in `.yaml` then the file is loaded
+                directly. If aPath is a directory, then aPath will be searched
+                for YAML description files.
+  
+    descriptions (dict) The dictionary of descriptions.
+  """
+
   if aPath.endswith('.yaml') :
     #print(f"FOUND: {aPath}")
     yamlData = {}
@@ -24,16 +39,47 @@ def recursivelyLoadDescriptions(aPath, descriptions) :
 
 class Config :
 
+  """
+  A global Configuration class which provides access to the original `doit`
+  configuration, as well as any task description specified in the `doit`
+  `descPaths` configuration.
+
+  Class variables:
+    config The original `doit` configuration loaded from:
+           - $HOME/.config/cfdoit/config.toml
+           - ./cfdoit.toml
+
+    descriptions: The task descriptions merged from all YAML files recursively
+                  loaded from the `cfdoit` `descPaths` TOML array.
+  """
+
+  # The original `doit` configuration.
   config       = {}
+
+  # A merge of all of the task descriptions found.
   descriptions = {}
 
   def printConfig() :
+    """
+    Print the original `doit` configuration.
+    """
+
     print(yaml.dump(Config.config))
 
   def printDescriptions() :
+    """
+    Print the merged task descriptions (recursively) loaded from the `cfdoit`
+    `descPaths` TOML array.
+    """
+
     print(yaml.dump(Config.descriptions))
 
   def print() :
+    """
+    Print all known configuration (original `doit` as well as all task
+    descriptions).
+    """
+
     print("--Config-----------------------------------------------------------")
     Config.printConfig()
     print("--Descriptions-----------------------------------------------------")
@@ -75,6 +121,11 @@ class Config :
       return
 
   def loadDescriptions() :
+    """
+    (recursively) Load task descriptions from the YAML files specified in the
+    `cfdoit` `descPaths` TOML array.
+    """
+
     descPaths = [ ]
     if 'descPaths' in Config.config['GLOBAL'] :
       descPaths = Config.config['GLOBAL']['descPaths']
@@ -86,7 +137,21 @@ class Config :
 
   _varRe = re.compile(r'\${?(\w+)}?')
 
-  def _expandEnv(curEnvDict, aListOfEnvDicts, aPkgName) :
+  def expandEnv(curEnvDict, aListOfEnvDicts, aPkgName) :
+    """
+    Sequentially expand all environment variables speficifed in the successive
+    dictionaries specified in the `aListOfEnvDicts` parameter.
+
+    All externally specified environment variables MUST be placed in the
+    `curEnvDict` parameter BEFORE calling `_expandEnv`.
+
+    The fully expanded environment varialbes can be found in the `curEnvDict`
+    parameter AFTER the call to `_expandEnv`.
+
+    Returns the expanded list of environment dicts in the same order found in
+    the `aListOfEnvDicts` parameter.
+    """
+
     resultListOfEnvDicts = []
     for anEnvDict in aListOfEnvDicts :
       curKeyList = []
@@ -108,7 +173,16 @@ class Config :
       resultListOfEnvDicts.append(theEnv)
     return resultListOfEnvDicts
 
-  def _expandActions(curEnvDict, someActions, aPkgName) :
+  def expandActions(curEnvDict, someActions, aPkgName) :
+    """
+    Expand all environment varible refrences in each action line (and action
+    line parts). 
+    
+    Environment variables MUST be provided in the `curEnvDict` parameter.
+
+    Returns the actions with all environment variables expanded.
+    """
+
     theActions = []
     for anActionLine in someActions :
       if isinstance(anActionLine, str) :
@@ -139,6 +213,14 @@ class Config :
     return theActions
 
   def _mergeSnipets(theSnipets, snipets) :
+    """
+    (Private) merge the snipets (action, environment and tools) found in the
+    `snipets` parameter.
+
+    Snipets are appeded to any existing snipets contained in the `theSnipets`
+    parameter.
+    """
+
     if 'actions' in snipets :
       theSnipets['actions'].extend(snipets['actions'])
     if 'tools' in snipets :
@@ -146,7 +228,24 @@ class Config :
     if 'environment' in snipets :
       theSnipets['environment'].extend(snipets['environment'])
 
-  def getSnipets(aSnipetName, aPkgName, aPkgDef, initialEnvDict) :
+  def getSnipets(aSnipetName, aPkgName, aPkgDef, curEnvDict) :
+    """
+    Get the snipets (actions, environment, tools) named by the `aSnipetName`
+    parameters.
+
+    Snipets MUST be provided in one or more task description YAML files, under
+    the 'taskSnipets` top-level key.
+
+    The action and environment snipets will be expanded using the environment
+    varibles found in the `curEnvDict` parameter.
+
+    The `curEnvDict` MUST contain all original environment variables BEFORE
+    calling `getSnipets`.
+
+    The `curEnvDict` parameter will contain all fully expanded enviroment
+    variables AFTER the call to `getSnipets`.
+    """
+
     theSnipets = {
       'actions'     : [],
       'tools'       : [],
@@ -168,11 +267,11 @@ class Config :
 
     Config._mergeSnipets(theSnipets, aPkgDef)
 
-    theSnipets['environment'] = Config._expandEnv(
-      initialEnvDict, theSnipets['environment'], aPkgName
+    theSnipets['environment'] = Config.expandEnv(
+      curEnvDict, theSnipets['environment'], aPkgName
     )
-    theSnipets['actions'] = Config._expandActions(
-      initialEnvDict, theSnipets['actions'], aPkgName
+    theSnipets['actions'] = Config.expandActions(
+      curEnvDict, theSnipets['actions'], aPkgName
     )
     #print(yaml.dump(theSnipets))
     return theSnipets

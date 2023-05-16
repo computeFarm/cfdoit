@@ -11,6 +11,23 @@ from cfdoit.config import Config
 import cfdoit.dodo
 
 def cli() :
+  """
+  The main entry point for the `cfdoit` tool.
+
+  We manipulate the original `doit` load order in order to:
+
+  1. Provide a global `Config` class containing the `doit` config
+
+  2. Load `doit` config from `$HOME/.config/cfdoit/config.toml` (if found) and
+     then merge any further configuration found in `./cfdoit.toml` (if found).
+
+  3. Load any task description files/directories specified in the TOML
+     `descPaths` array.
+  
+  4. Load the `doit` tasks from the `cfdoit.dodo.py` file.
+
+  """
+
   doitConfig   = DoitConfig()
   cfdoitConfig = {}
 
