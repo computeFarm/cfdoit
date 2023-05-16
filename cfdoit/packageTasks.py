@@ -1,6 +1,6 @@
 """
-Data driven `doit` extensions and task generators using the `cfdoit` task
-descriptions
+Data driven `doit` extensions and task generators for downloading, compiling and
+installing all external packages using the `cfdoit` task descriptions.
 
 While the task descriptions formally contain a package-level `taskSnipets` key,
 this key is currently NOT used. At the moment the only pattern we use

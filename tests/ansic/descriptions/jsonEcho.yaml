@@ -4,15 +4,14 @@ projects:
     targets:
       cmd:
         - jsonEchoKernel
+    tools:
+      - cpp
     dependencies:
       packages:
         - xeus
         - xeus-zmq
         - nl-json
         - xtl
-      src:
-        - main.cpp
-        - jsonEcho.cpp
       libs:
         - 'xeus-zmq.a'
         - 'xeus.a'
@@ -20,5 +19,18 @@ projects:
         - 'crypto'
         - 'sodium'
         - 'uuid'
-    tools:
-      - cpp
+      src:
+        main.cpp:
+          packages:
+            - xeus
+            - xeus-zmq
+          includes:
+            - xeus/xkernel.hpp
+            - xeus/xkernel_configuration.hpp
+            - xeus-zmq/xserver_zmq.hpp
+            - jsonEcho.hpp
+        jsonEcho.cpp:
+          packages:
+            - xeus
+          includes:
+            - xeus/xhelper.hpp
