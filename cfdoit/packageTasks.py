@@ -8,6 +8,16 @@ from cfdoit.config import Config
 from cfdoit.workerTasks import WorkerTask
 
 def checkVersion(aVersion) :
+  """
+  A `doit` extension to check (and save) package versions.
+
+  Returns True if the specified version is equal to the (previously) saved
+  version. (False otherwise)
+
+  If used as part of a task uptodate, the task will only be run if the requested
+  version has changed.
+  """
+
   def versionChecker(task, values) :
     def saveVersion() :
       return {'saved-version' : aVersion }
@@ -16,58 +26,36 @@ def checkVersion(aVersion) :
     return lastVersion == aVersion
   return versionChecker
 
-def gen_downloadInstallPackage(aName, aPkgDef, pkgsDir, dlsDir) :
-  ""
-  
-  """
-  #print("----------------------------------")
-  #print(aName)
-  #print(yaml.dump(aPkgDef))
-  pkgDir       = os.path.join(pkgsDir, aName)
-  repoPath     = aPkgDef['repoPath']
-  repoProvider = aPkgDef['repoProvider']
-  repoVersion  = aPkgDef['repoVersion']
-  if repoProvider != 'github' :
-    print("WARNING: We can only deal with GitHub packages at the moment!")
-    return
-
-  tarFile    = f'{aName}-{repoVersion}.tar.gz'
-  dlName     = os.path.join(dlsDir, tarFile)
-  targetFile = os.path.join(pkgDir, 'CMakeLists.txt')
-
-  url = f'https://github.com/{repoPath}/archive/refs/tags/{repoVersion}.tar.gz'
-  
-  theActions = [
-      f"mkdir -p {dlsDir}",
-      f"mkdir -p {pkgDir}",
-      f"curl --location --output {dlName} {url}",
-      f"tar xf {dlName} --strip-components=1 --directory={pkgDir}"
-    ]
-  theTools = ['curl', 'tar']
-
-  yield {
-    'basename' : f"download-extract-{aName}",
-    'actions'  : [ WorkerTask(theActions, theTools) ],
-    'uptodate' : [ checkVersion(repoVersion) ],
-    'targets'  : [dlName]
-  }
+def gen_downloadPackage(theEnv) :
   """
 
-  #print(yaml.dump(Config.getSnipets('gitHubDownload', {})))
-  theEnv = {
-    'pkgName'     : aName,
-    'repoVersion' : aPkgDef['repoVersion'],
-    'repoPath'    : aPkgDef['repoPath']
-  }
-  theSnipets = Config.getSnipets('gitHubDownload', aName, {}, theEnv)
+  Download and extract an external package.
+
+  A generator which generates the `doit` task required to download and extract
+  the specified external package using the `gitHubDownload` snipet.
+  """
+
+  aName       = theEnv['pkgName']
+  repoVersion = theEnv['repoVersion']
+  theSnipets  = Config.getSnipets('gitHubDownload', aName, {}, theEnv)
   yield {
     'basename' : f"download-extract-{aName}",
     'actions'  : [ WorkerTask(theSnipets) ],
-    'uptodate' : [ checkVersion(aPkgDef['repoVersion']) ],
+    'uptodate' : [ checkVersion(repoVersion) ],
     'targets'  : [ theEnv['dlName'] ]
   }
 
+
+def gen_installPackage(theEnv, aPkgDef) :
   """
+  Compile and install an external package.
+
+  A generator which generates the `doit` task required to compile and (locally)
+  install the specified external package using the `cmakeCompile` snipet.
+  """
+  aName  = theEnv['pkgName']
+  pkgDir = theEnv['pkgDir']
+
   theTargets = []
   if 'targets' in aPkgDef :
     if 'libs' in aPkgDef['targets'] :
@@ -98,29 +86,50 @@ def gen_downloadInstallPackage(aName, aPkgDef, pkgsDir, dlsDir) :
   theTools = []
   if 'tools' in aPkgDef : theTools = aPkgDef['tools']
 
-  theEnv = {}
-  if 'environment' in aPkgDef : theEnv = aPkgDef['environment']
+  if 'environment' in aPkgDef : theEnv.update(aPkgDef['environment'])
   theEnv['dir'] = pkgDir
 
+  theSnipets  = Config.getSnipets('cmakeCompile', aName, aPkgDef, theEnv)
   yield {
     'basename' : f"compile-install-{aName}",
-    'actions'  : [ WorkerTask(theActions, theTools, theEnv) ], 
+    'actions'  : [ WorkerTask(theSnipets) ], 
     'targets'  : theTargets,
     'file_dep' : theDeps
   }
-"""
 
 def gen_downloadInstallPackages(pkgsDict) :
+  """
+  Setup for external packages
+
+  Generate the collection of `doit` tasks required to download, extract, compile
+  and then (locally) install all external packages specified in the `packages`
+  top-level key in the project task description.
+  """
+
   pkgsDir = "packages"
   dlsDir = os.path.join(pkgsDir, 'downloads')
   yield {
     'basename' : f"ensure-{dlsDir}-exists",
     'actions'  : [(create_folder, [dlsDir])]
   }
+
   for aName, aPkgDef in pkgsDict.items() :
-    yield gen_downloadInstallPackage(aName, aPkgDef, pkgsDir, dlsDir)
+    theEnv = {
+      'pkgsDir'     : 'packages',
+      'dlsDir'      : 'packages/downloads',
+      'pkgName'     : aName,
+      'repoVersion' : aPkgDef['repoVersion'],
+      'repoPath'    : aPkgDef['repoPath']
+    }
+    yield gen_downloadPackage(theEnv)
+    yield gen_installPackage(theEnv, aPkgDef)
 
 def task_downloadInstallPackages() :
+  """
+  The `doit` method which creates the download and install tasks for all known
+  external packages.
+  """
+
   projDesc = Config.descriptions
   if 'packages' in projDesc :
     yield gen_downloadInstallPackages(projDesc['packages'])

@@ -2,10 +2,23 @@
 from collections import defaultdict
 import copy
 import glob
+import importlib.resources
 import os
 import platform
 import re
 import yaml
+
+def loadDescriptionsFromModule(aModule, descriptions) :
+  """
+  Load all YAML task descriptions in the Python module `aModule`.
+  """
+
+  for aResource in importlib.resources.contents(aModule) :
+    if not aResource.endswith('.yaml') : continue
+    #print(f"loading {aModule}.{aResource}")
+    yamlStr  = importlib.resources.read_text(aModule, aResource)
+    yamlData = yaml.safe_load(yamlStr)
+    Config.mergeData(descriptions, yamlData, '.')
 
 def recursivelyLoadDescriptions(aPath, descriptions) :
 
@@ -122,14 +135,19 @@ class Config :
 
   def loadDescriptions() :
     """
-    (recursively) Load task descriptions from the YAML files specified in the
-    `cfdoit` `descPaths` TOML array.
+    (recursively) Load task descriptions from the YAML files:
+
+    1. located in the `cfdoit.taskDescriptions` module, and
+    
+    2. specified in the `cfdoit` `descPaths` TOML array.
     """
+
+    descriptions = {}
+    loadDescriptionsFromModule('cfdoit.taskDescriptions', descriptions)
 
     descPaths = [ ]
     if 'descPaths' in Config.config['GLOBAL'] :
       descPaths = Config.config['GLOBAL']['descPaths']
-    descriptions = {}
     for aDescPath in descPaths :
       recursivelyLoadDescriptions(aDescPath, descriptions)
 
@@ -166,6 +184,8 @@ class Config :
           print(f"Missing key: {err}")
           print(f"  while trying to expand:")
           print(f"  [{aKey}] : [{aValue}]")
+          print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+          print(yaml.dump(curEnvDict))
           print("-------------------------------------------------------------")
       theEnv = {}
       for aKey in curKeyList :
@@ -195,6 +215,8 @@ class Config :
           print(f"Missing key: {err}")
           print(f"  while trying to expand:")
           print(f"  [anActionLine]")
+          print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+          print(yaml.dump(curEnvDict))
           print("-------------------------------------------------------------")
       elif isinstance(anActionLine, list) :
         theActionLine = []
@@ -207,7 +229,9 @@ class Config :
             print(f"In package: {aPkgName}")
             print(f"Missing key: {err}")
             print(f"  while trying to expand:")
-            print(f"  [anActionLine]")
+            print(f"  [anActionPart]")
+            print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            print(yaml.dump(curEnvDict))
             print("-------------------------------------------------------------")
         theActions.append(theActionLine)
     return theActions
