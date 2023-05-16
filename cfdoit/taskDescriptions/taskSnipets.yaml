@@ -27,7 +27,7 @@ taskSnipets:
         - curl
         - tar
 
-    # Preform a "standard" CMake compile and install
+    # Perform a "standard" CMake compile and install
     cmakeCompile:
       actions:
         -  mkdir -p $pkgDir/build
@@ -40,3 +40,17 @@ taskSnipets:
       tools:
         - cmake
         - ninja
+
+    # Perform a "standard" gcc compile
+    gccCompile:
+      actions:
+        - $cc $CFLAGS $INCLUDES -o $out $in
+      tools:
+        - gcc
+
+    # Perform a "standard" gcc link
+    gccLink:
+      actions:
+        - $cc $LINKFLAGS $LIBS -o $out $in
+      tools:
+        - gcc

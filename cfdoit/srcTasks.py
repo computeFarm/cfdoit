@@ -26,11 +26,16 @@ def gen_compileSource(aName, aDef, theEnv) :
       pass
   if 'packages' in aDef :
     for aPackage in aDef['packages'] :
-      taskDep.append(f"compile-install-{aPackage}")
+      taskDeps.append(f"compile-install-{aPackage}")
+
+  theSnipets  = Config.getSnipets('gccCompile', aName, aDef, theEnv)
 
   yield {
     'basename' : f"compile-{aName}",
-    'targets'  : [ aName.split('.')[0]+'.o' ]
+    'targets'  : [ aName.split('.')[0]+'.o' ],
+    'actions'  : [ WorkerTask(theSnipets)],
+    'file_dep' : fileDeps,
+    'task_dep' : taskDeps,
   }
 
 def gen_linkCommand(aName, aDef, theEnv) :
@@ -58,7 +63,7 @@ def gen_compileLinkSource(someProjDefs) :
     for aSrcName, aSrcDef in theSrc.items() :
       yield gen_compileSource(aSrcName, aSrcDef, theEnv)
 
-    yield get_linkCommand(aName, aProjDef, theEnv)
+    yield gen_linkCommand(aName, aProjDef, theEnv)
 
 def task_compileLinkSource() :
   """
