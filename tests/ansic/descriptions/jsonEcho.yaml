@@ -1,36 +1,39 @@
 
 projects:
   jsonEcho:
+    taskSnipet: gccInstallCommand
     targets:
-      cmd:
-        - jsonEchoKernel
+      - jsonEchoKernel
     tools:
       - cpp
-    dependencies:
-      packages:
-        - xeus
-        - xeus-zmq
-        - nl-json
-        - xtl
-      libs:
-        - 'xeus-zmq.a'
-        - 'xeus.a'
-        - 'zmq.a'
-        - 'crypto'
-        - 'sodium'
-        - 'uuid'
-      src:
-        main.cpp:
-          packages:
-            - xeus
-            - xeus-zmq
-          includes:
-            - xeus/xkernel.hpp
-            - xeus/xkernel_configuration.hpp
-            - xeus-zmq/xserver_zmq.hpp
-            - jsonEcho.hpp
-        jsonEcho.cpp:
-          packages:
-            - xeus
-          includes:
-            - xeus/xhelper.hpp
+    taskDependencies:
+      - xeus
+      - xeus-zmq
+      - nl-json
+      - xtl
+    fileDependencies:
+      - ${pkgLibs}xeus-zmq.a
+      - ${pkgLibs}xeus.a
+      - ${pkgLibs}zmq.a
+      - ${systemLibs}crypto
+      - ${systemLibs}sodium
+      - ${systemLibs}uuid
+    src:
+      main.cpp:
+        taskSnipet: gccCompile
+        environment:
+          INCLUDES: ""
+        taskDependencies:
+          - xeus
+          - xeus-zmq
+        fileDependencies:
+          - $includesDir/xeus/xkernel.hpp
+          - $includesDir/xeus/xkernel_configuration.hpp
+          - $includesDir/xeus-zmq/xserver_zmq.hpp
+          - $srcDir/jsonEcho.hpp
+      jsonEcho.cpp:
+        taskSnipet: gccCompile
+        taskDependencies:
+          - xeus
+        fileDependencies:
+          - $includesDir/xeus/xhelper.hpp

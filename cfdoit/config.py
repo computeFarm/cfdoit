@@ -72,6 +72,13 @@ class Config :
   # A merge of all of the task descriptions found.
   descriptions = {}
 
+  def getSnipets() :
+    """
+    Return any known `taskSnipets` from the currently loaded task descriptions.
+    """
+    if 'taskSnipets' not in Config.descriptions : return {}
+    return Config.descriptions['taskSnipets']
+
   def printConfig() :
     """
     Print the original `doit` configuration.
@@ -252,8 +259,10 @@ class Config :
     if 'environment' in snipets :
       theSnipets['environment'].extend(snipets['environment'])
 
+"""
   def getSnipets(aSnipetName, aPkgName, aPkgDef, curEnvDict) :
-    """
+"""
+"""
     Get the snipets (actions, environment, tools) named by the `aSnipetName`
     parameters.
 
@@ -268,8 +277,8 @@ class Config :
 
     The `curEnvDict` parameter will contain all fully expanded enviroment
     variables AFTER the call to `getSnipets`.
-    """
-
+"""
+"""
     theSnipets = {
       'actions'     : [],
       'tools'       : [],
@@ -299,4 +308,4 @@ class Config :
     )
     #print(yaml.dump(theSnipets))
     return theSnipets
-  
+"""  

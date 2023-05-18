@@ -2,36 +2,31 @@ packages:
   xeus:
     # https://github.com/jupyter-xeus/xeus
 
-    repoProvider: github
-    repoPath: jupyter-xeus/xeus
-    repoVersion: '3.0.5'
+    environment:
+      repoProvider: github
+      repoPath: jupyter-xeus/xeus
+      repoVersion: '3.0.5'
 
     targets:
-      libs:
-        - 'xeus.a'
-      includes:
-        - 'xeus/xkernel.hpp'
-        - 'xeus/xkernel_configuration.hpp'
-        - 'xeus/xhelper.hpp'
+      - ${pkgLibs}xeus.a
+      - $includesDir/xeus/xkernel.hpp
+      - $includesDir/xeus/xkernel_configuration.hpp
+      - $includesDir/xeus/xhelper.hpp
 
-    dependencies:
-      packages:
-        - nl-json
-        - xtl
+    taskDependencies:
+      - nl-json
+      - xtl
 
-      includes:
-        - 'nlohmann/json.hpp'
-        - 'xtl/xhash.hpp'
+    fileDependencies:
+      - $includesDir/nlohmann/json.hpp
+      - $includesDir/xtl/xhash.hpp
 
     tools:
       - cpp
       - cmake
       - ninja
 
-    taskSnipets:
-      - snipet: gitHubDownload
-        targets: CMakeLists.txt
-      - cmakeCompile
+    taskSnipet: cmakeCompile
 
 # Notes:
 

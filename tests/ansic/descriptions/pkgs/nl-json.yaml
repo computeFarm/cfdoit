@@ -2,19 +2,16 @@ packages:
   nl-json:
     # https://github.com/nlohmann/json
 
-    repoProvider: github
-    repoPath: nlohmann/json
-    repoVersion: 'v3.11.2'
+    environment:
+      repoProvider: github
+      repoPath: nlohmann/json
+      repoVersion: 'v3.11.2'
 
     targets:
-      includes:
-        - nlohmann/json.hpp
+      - $includesDir/nlohmann/json.hpp
 
     tools:
       - cmake
       - ninja
 
-    taskSnipets:
-      - snipet: gitHubDownload
-        targets: CMakeLists.txt
-      - cmakeCompile
+    taskSnipet: cmakeCompile

@@ -1,11 +1,86 @@
 
 import os
+import pprint
+import sys
 import tempfile
 import yaml
 
-from doit.action import BaseAction, CmdAction
+from doit.action     import BaseAction, CmdAction
+#from doit.cmd_base   import DoitCmdBase
+from doit.cmd_info   import opt_hide_status, Info
+from doit.exceptions import InvalidCommand
 
 from cfdoit.config import Config
+
+# copied from pydoit/cmd_info:Info._execute
+#
+class WInfo(Info) :
+  """command doit winfo"""
+
+  doc_purpose = "show info about a worker task"
+  doc_usage = "TASK"
+  doc_description = None
+
+  cmd_options = (opt_hide_status, )
+
+  def _execute(self, pos_args, hide_status=False) :
+    if len(pos_args) != 1:
+      msg = ('`winfo` failed, must select *one* task.'
+             '\nCheck `{} help winfo`.'.format(self.bin_name))
+      raise InvalidCommand(msg)
+    task_name = pos_args[0]
+    # dict of all tasks
+    tasks = dict([(t.name, t) for t in self.task_list])
+    printer = pprint.PrettyPrinter(indent=4, stream=self.outstream)
+
+    task = tasks[task_name]
+    #print(yaml.dump(task.actions))
+    #sys.exit(1)
+    task_attrs = (
+      ('file_dep', 'list'),
+      ('task_dep', 'list'),
+      ('setup_tasks', 'list'),
+      ('calc_dep', 'list'),
+      ('targets', 'list'),
+      ('actions', 'list'),
+      # these fields usually contains reference to python functions
+      # 'clean', 'uptodate', 'teardown', 'title'
+      ('getargs', 'dict'),
+      ('params', 'list'),
+      ('verbosity', 'scalar'),
+      ('watch', 'list'),
+      ('meta', 'dict')
+    )
+
+    self.outstream.write('\n{}\n'.format(task.name))
+    if task.doc:
+      self.outstream.write('\n{}\n'.format(task.doc))
+
+    # print reason task is not up-to-date
+    retcode = 0
+    if not hide_status:
+      status = self.dep_manager.get_status(task, tasks, get_log=True)
+      self.outstream.write('\n{:11s}: {}\n'
+                            .format('status', status.status))
+      if status.status != 'up-to-date':
+        # status.status == 'run' or status.status == 'error'
+        self.outstream.write(self.get_reasons(status.reasons))
+        self.outstream.write('\n')
+        retcode = 1
+
+    for (attr, attr_type) in task_attrs:
+      value = getattr(task, attr)
+      # only print fields that have non-empty value
+      if value:
+        self.outstream.write('\n{:11s}: '.format(attr))
+        if attr_type == 'list':
+          self.outstream.write('\n')
+          for val in value:
+            self.outstream.write(' - {}\n'.format(val))
+        else:
+          printer.pprint(getattr(task, attr))
+
+    return retcode
 
 def compileActionScript(someEnvs, someActions) :
   """

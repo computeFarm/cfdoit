@@ -2,23 +2,20 @@ packages:
   libzmq:
     # https://github.com/zeromq/libzmq
 
-    repoProvider: github
-    repoPath: zeromq/libzmq
-    repoVersion: 'v4.3.4'
+    environment:
+      repoProvider: github
+      repoPath: zeromq/libzmq
+      repoVersion: 'v4.3.4'
 
     targets:
-      libs:
-        - 'zmq.a'
+      - ${pkgLibs}zmq.a'
 
     tools:
       - cpp
       - cmake
       - ninja
 
-    taskSnipets:
-      - snipet: gitHubDownload
-        targets: CMakeLists.txt
-      - cmakeCompile
+    taskSnipet: cmakeCompile
 
 # NOTES:
 

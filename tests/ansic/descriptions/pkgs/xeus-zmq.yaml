@@ -2,42 +2,35 @@ packages:
   xeus-zmq:
     # https://github.com/jupyter-xeus/xeus-zmq
 
-    repoProvider: github
-    repoPath: jupyter-xeus/xeus-zmq
-    repoVersion: '1.0.2'
+    environment:
+      repoProvider: github
+      repoPath: jupyter-xeus/xeus-zmq
+      repoVersion: '1.0.2'
 
     targets:
-      libs:
-        - 'xeus-zmq.a'
-      includes:
-        - 'xeus-zmq/zserver_zmg.hpp'
+      - ${pkgLibs}xeus-zmq.a
+      - $includesDir/xeus-zmq/zserver_zmg.hpp
 
-    dependencies:
-      packages:
-        - xeus
-        - libzmq
-        - cppzmq
-        - nl-json
+    taskDependencies:
+      - xeus
+      - libzmq
+      - cppzmq
+      - nl-json
 
-      libs:
-        - 'zmq.a'
-        - 'xeus.a'
-
-      includes:
-        - 'zmq.h'
-        - 'xeus/xkernel.hpp'
-        - 'xeus/xkernel_configuration.hpp'
-        - 'xeus/xhelper.hpp'
+    fileDependencies:
+      - ${pkgLibs}zmq.a
+      - ${pkgLibs}xeus.a
+      - $includesDir/zmq.h
+      - $includesDir/xeus/xkernel.hpp
+      - $includesDir/xeus/xkernel_configuration.hpp
+      - $includesDir/xeus/xhelper.hpp
 
     tools:
       - cpp
       - cmake
       - ninja
 
-    taskSnipets:
-      - snipet: gitHubDownload
-        targets: CMakeLists.txt
-      - cmakeCompile
+    taskSnipet: cmakeCompile
 
 # Notes:
 

@@ -7,6 +7,7 @@ from doit.cmd_base import ModuleTaskLoader
 from doit.doit_cmd import DoitConfig, DoitMain
 
 from cfdoit.config import Config
+from cfdoit.workerTasks import WInfo
 
 import cfdoit.dodo
 
@@ -43,6 +44,11 @@ def cli() :
 
   # The cfdoit dodo file of tasks
   taskLoader = ModuleTaskLoader(cfdoit.dodo)
+
+  # monkey patch the list of DOIT Commands to add our own addtions
+  oldCmds = list(DoitMain.DOIT_CMDS)
+  oldCmds.append(WInfo)
+  DoitMain.DOIT_CMDS = tuple(oldCmds)
 
   doitMain   = DoitMain(
     task_loader=taskLoader,

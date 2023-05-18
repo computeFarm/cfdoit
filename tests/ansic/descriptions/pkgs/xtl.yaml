@@ -2,19 +2,16 @@ packages:
   xtl:
     # https://github.com/xtensor-stack/xtl
 
-    repoProvider: github
-    repoPath: xtensor-stack/xtl
-    repoVersion: '0.7.5'
+    environment:
+      repoProvider: github
+      repoPath: xtensor-stack/xtl
+      repoVersion: '0.7.5'
 
     targets:
-      includes:
-        - xtl/xhash.hpp
+      - $includesDir/xtl/xhash.hpp
 
     tools:
       - cmake
       - ninja
 
-    taskSnipets:
-      - snipet: gitHubDownload
-        targets: CMakeLists.txt
-      - cmakeCompile
+    taskSnipet: cmakeCompile
