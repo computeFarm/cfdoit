@@ -194,6 +194,9 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
   if 'snipetDeps' in aDef :
     for aSnipetName in aDef['snipetDeps'] :
       if aSnipetName in theSnipets :
+        theSnipets[aSnipetName]['func'](
+          theSnipets[aSnipetName]['def'], theEnv
+        )
         buildTasksFromDef(
           aSnipetName, theSnipets[aSnipetName]['def'], theEnv, theTasks
         )
@@ -223,7 +226,7 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
       #print(yaml.dump(curTask))
   print(f"<<< building task from {aName}")
 
-def mergeTaskDef(aName, aDef) :
+def mergeTaskDef(aName, aDef, theEnv) :
   """
   Merge taskSnipet's definition into the base task's definition
   """
@@ -236,6 +239,7 @@ def mergeTaskDef(aName, aDef) :
     if aSnipetName in theSnipets :
       taskName = aSnipetName
       Config.mergeData(aDef, theSnipets[aSnipetName]['def'], '.')
+      theSnipets[aSnipetName]['func'](aDef, theEnv)
   return taskName
 
 def gen_packageTasks(pkgName, pkgDef, theTasks) :
@@ -247,7 +251,7 @@ def gen_packageTasks(pkgName, pkgDef, theTasks) :
   if 'environment' in pkgDef :
     for aKey, aValue in pkgDef['environment'].items() :
       theEnv[aKey] = aValue
-  taskName = mergeTaskDef(pkgName, pkgDef)
+  taskName = mergeTaskDef(pkgName, pkgDef, theEnv)
   buildTasksFromDef(taskName, pkgDef, theEnv, theTasks)
 
 def gen_projectTasks(projName, projDef, theTasks) :
@@ -264,7 +268,7 @@ def gen_projectTasks(projName, projDef, theTasks) :
           theEnv[aKey] = aValue
       if 'CFLAGS' not in theEnv : theEnv['CFLAGS'] = "-Wall"
       if 'INCLUDES' not in theEnv : theEnv['INCLUDES'] = "-I$includesDir"
-      taskName = mergeTaskDef(aSrcName, aSrcDef)+':'+aSrcName
+      taskName = mergeTaskDef(aSrcName, aSrcDef, theEnv)+':'+aSrcName
       buildTasksFromDef(taskName, aSrcDef, theEnv, theTasks)
   
   projLibs = " "
@@ -283,7 +287,7 @@ def gen_projectTasks(projName, projDef, theTasks) :
   if 'environment' in projDef :
     for aKey, aValue in projDef['environment'].items() :
       theEnv[aKey] = aValue
-  taskName = mergeTaskDef(projName, projDef)
+  taskName = mergeTaskDef(projName, projDef, theEnv)
   buildTasksFromDef(taskName, projDef, theEnv, theTasks)
 
 def task_genTasks() :

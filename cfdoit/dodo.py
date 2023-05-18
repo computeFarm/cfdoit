@@ -1,17 +1,8 @@
+"""
+The "standard" doit `dodo.py` module which simply imports the
+cfdoit.taskGenerator.task_genTasks method which does all of the work defining
+the build tasks from a YAML description of the overall project.
+"""
 
-import yaml
 
-#from cfdoit.config        import Config 
 from cfdoit.taskGenerator import task_genTasks
-#from cfdoit.packageTasks import task_downloadInstallPackages
-#from cfdoit.srcTasks     import task_compileLinkSource
-
-#def task_loadComputeFarmTasks() :
-#  """
-#  The base `doit` task which will create all `cfdoit` tasks from the data loaded
-#  by the task description YAML files.
-#
-#  """
-#
-#  #Config.print()
-#  pass

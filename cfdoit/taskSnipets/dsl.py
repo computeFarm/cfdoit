@@ -80,5 +80,5 @@ def buildBaseSnipet(snipetDef, theEnv) :
  
   This snipet will be merged into ALL other package snipets
   """
-  print(yaml.dump(snipetDef))
-  print(yaml.dump(theEnv))
+  #print(yaml.dump(snipetDef))
+  #print(yaml.dump(theEnv))
