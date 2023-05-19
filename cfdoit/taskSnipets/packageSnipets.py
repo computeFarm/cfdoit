@@ -95,7 +95,7 @@ def cmakeCompile(snipetDef, theEnv) :
       taskDeps = []
       for aPkgName in deps['packages'] :
         taskDeps.append(f"download-extract-{aPkgName}")
-    snipetExtendList(snipetDef, 'task_dep', taskDeps)
+    snipetExtendList(snipetDef, 'taskDependencies', taskDeps)
 
     fileDeps = []
     if 'pkgLibs' in deps :
@@ -104,7 +104,7 @@ def cmakeCompile(snipetDef, theEnv) :
     if 'pkgIncludes' in deps:
       for aPkgInclude in deps['pkgIncludes'] :
         fileDeps.append(f"${{pkgIncludes}}/{aPkgInclude}")
-    snipetExtendList(snipetDef, 'file_dep', fileDeps)
+    snipetExtendList(snipetDef, 'fileDependencies', fileDeps)
 
   if 'created' in snipetDef :
     created = snipetDef['created']

@@ -2,8 +2,50 @@
 Task snipets used for compiling, linking and then installing ANSI-C source code.
 """
 import os
+import yaml
 
-from cfdoit.taskSnipets.dsl import TaskSnipets
+from cfdoit.taskSnipets.dsl import TaskSnipets, expandEnvInList
+
+def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
+  """
+  Collect the
+  
+  - `pkgDeps`, 
+  - `pkgLibs`, `systemLibs`,
+  - `pkgIncludes`, `srcIncludes`
+  
+  from the `snipetDef` parameter.
+  """
+  pkgLibs     = []
+  systemLibs  = []
+  pkgIncludes = []
+  srcIncludes = []
+  pkgDeps     = []
+  if 'dependencies' in snipetDef :
+    deps = snipetDef['dependencies']
+    if 'packages' in deps :
+      for aPkgDep in deps['packages'] :
+        pkgDeps.append(f"compile-install-{aPkgDep}")
+    if 'pkgIncludes' in deps :
+      for aPkgInclude in deps['pkgIncludes'] :
+        pkgIncludes.append(f"${{pkgIncludes}}/{aPkgInclude}")
+    if 'srcIncludes' in deps :
+      for aSrcInclude in deps['srcIncludes'] :
+        srcIncludes.append(aSrcInclude)
+    if 'pkgLibs' in deps :
+      for aPkgLib in deps['pkgLibs'] :
+        pkgLibs.append(f"${{pkgLibs}}/{aPkgLib}")
+    if 'systemLibs' in deps :
+      for aSysLib in deps['systemLibs'] :
+        systemLibs.append(f"${{systemLibs}}{aSysLib}")
+
+  pkgLibs     = expandEnvInList(snipetName, pkgLibs,     theEnv)
+  systemLibs  = expandEnvInList(snipetName, systemLibs,  theEnv)
+  pkgIncludes = expandEnvInList(snipetName, pkgIncludes, theEnv)
+  srcIncludes = expandEnvInList(snipetName, srcIncludes, theEnv)
+  pkgDeps     = expandEnvInList(snipetName, pkgDeps,     theEnv)
+
+  return (pkgDeps, pkgLibs, systemLibs, pkgIncludes, srcIncludes)
 
 @TaskSnipets.addSnipet('linux', 'srcBase', {
   'snipetDeps'  : [ 'buildBase'    ],
@@ -41,9 +83,18 @@ def gccCompile(snipetDef, theEnv) :
 
   Adds the srcBaseName (computed from the srcName environment variable)
   """
+  #print(yaml.dump(snipetDef))
+
   if 'CFLAGS' not in theEnv : theEnv['CFLAGS'] = "-Wall"
   if 'INCLUDES' not in theEnv : theEnv['INCLUDES'] = "-I$pkgIncludes"
   theEnv['srcBaseName'] = os.path.splitext(theEnv['srcName'])[0]
+
+  pkgDeps, pkgLibs, systemLibs, pkgIncludes, srcIncludes = \
+    collectAnsiCDependencies('gccCompile', snipetDef, theEnv)
+
+  snipetDef['fileDependencies'] = pkgIncludes + [ theEnv['srcName'] ]
+  snipetDef['taskDependencies'] = pkgDeps
+  snipetDef['targets']          = [ theEnv['srcBaseName']+'.o' ]
 
   snipetDef['useWorkerTask'] = True
 
@@ -69,22 +120,27 @@ def gccInstallCommand(snipetDef, theEnv) :
 
   Gathers together the collection of sources into the $in varialbe.
   """
-  projLibs = []
-  if 'dependencies' in snipetDef :
-    deps = snipetDef['dependencies']
-    if 'pkgLibs' in deps :
-      for aPkgLib in deps['pkgLibs'] :
-        projLibs.append(f"${{pkgLibs}}/{aPkgLib}")
-    if 'systemLibs' in deps :
-      for aSysLib in deps['systemLibs'] :
-        projLibs.append(f"${{systemLibs}}{aSysLib}")
-  theEnv['LIBS'] = " ".join(projLibs),
+  pkgDeps, pkgLibs, systemLibs, pkgIncludes, srcIncludes = \
+    collectAnsiCDependencies('gccInstallCommand', snipetDef, theEnv)
+  
+  theEnv['LIBS'] = " ".join(pkgLibs + systemLibs)
 
   projSrc = []
+  srcDeps = []
   if 'src' in snipetDef :
     for aSrc in snipetDef['src'].keys() :
+      srcDeps.append(f"compile-{aSrc}")
       projSrc.append(os.path.splitext(aSrc)[0]+".o")
   theEnv['in'] = " ".join(projSrc)
+
+  targets = []
+  if 'created' in snipetDef :
+    for aTarget in snipetDef['created'] :
+      targets.append(f"${{installDir}}/{aTarget}")
+
+  snipetDef['fileDependencies'] = pkgLibs + projSrc
+  snipetDef['taskDependencies'] = pkgDeps + srcDeps
+  snipetDef['targets']          = targets
 
   snipetDef['useWorkerTask'] = True
 
