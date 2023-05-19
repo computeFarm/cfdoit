@@ -16,7 +16,10 @@ from cfdoit.taskSnipets.dsl import TaskSnipets
 })
 def srcBase(snipetDef, theEnv) :
   """
-  This snipet will be merged into ALL other (local) source snipets
+  This snipet will be merged into ALL other (local) source snipets.
+
+  It defines the most important environment variables for the compilation, and
+  linking of ANSI-C sources.
   """
   pass
 

@@ -165,6 +165,11 @@ def expandUptodates(snipetName, someUptodates, theEnv) :
   return theUptodates
 
 def expandList(snipetName, aList, theEnv) :
+  """
+  Expand all enviroment variables in a list of strings.
+
+  Environment variables MUST be provided in the `theEnv` parameter.
+  """
   resultList = []
   for anItem in aList :
     anItemStr = varRe.sub(r"{\1}", anItem)
@@ -181,12 +186,11 @@ def expandList(snipetName, aList, theEnv) :
       print("-------------------------------------------------------------")
   return resultList
 
-def mergeTaskList(aKey, aList, curTask) :
-  if aList :
-    if aKey not in curTask : curTask[aKey] = []
-    curTask[aKey].extend(aList)
-
 def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
+  """
+  The core task generator method which recursively generates tasks given a tree
+  of taskSnipet dependencies.
+  """
   if moduleVerbose : print(f">>> building task from {aName}")
   curTask = {}
   if 'snipetDeps' in aDef :
@@ -240,6 +244,9 @@ def mergeTaskDef(aName, aDef, theEnv) :
   return taskName
 
 def gen_packageTasks(pkgName, pkgDef, theTasks) :
+  """
+  Generate the doit tasks required to download and install a given package.
+  """
   if moduleVerbose : print(f"working on package {pkgName}")
   theEnv = {
     'taskName' : pkgName,
@@ -252,6 +259,11 @@ def gen_packageTasks(pkgName, pkgDef, theTasks) :
   buildTasksFromDef(taskName, pkgDef, theEnv, theTasks)
 
 def gen_projectTasks(projName, projDef, theTasks) :
+  """
+  Generate the doit tasks required to build a given project.
+
+  (At the moment this build process is focused on building ANSI-C commands).
+  """
   if moduleVerbose : print(f"working on project {projName}")
   if 'src' in projDef :
     for aSrcName, aSrcDef in projDef['src'].items() :
@@ -277,9 +289,10 @@ def gen_projectTasks(projName, projDef, theTasks) :
   buildTasksFromDef(taskName, projDef, theEnv, theTasks)
 
 def task_genTasks() :
-  #Config.printDescriptions()
-  #TaskSnipets.printSnipets()
-
+  """
+  The main doit task which generates all `cfdoit` tasks required to build a
+  project.
+  """
   global theSnipets
   if theSnipets is None :
     theSnipets = TaskSnipets.taskSnipets

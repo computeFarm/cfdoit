@@ -6,6 +6,13 @@ import functools
 import yaml
 
 def snipetExtendList(snipetDef, snipetKey, aList) :
+  """
+  Extends the list, named `snipetKey` in the `snipetDef` dict, using the list
+  `aList`.
+
+  If the `snipetDef` does not yet contain the key `snipetKey` it will be
+  automatically added as a list.
+  """
   if snipetKey not in snipetDef : snipetDef[snipetKey] = []
   snipetDef[snipetKey].extend(aList)
 

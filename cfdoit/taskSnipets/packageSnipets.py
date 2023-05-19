@@ -15,7 +15,10 @@ from cfdoit.taskSnipets.dsl import TaskSnipets, snipetExtendList
 })
 def packageBase(snipetDef, theEnv) :
   """
-  This snipet will be merged into ALL other package snipets
+  This snipet will be merged into ALL other package snipets.
+
+  It defines the most important environment variables for the package download
+  and instal processes.
   """
   pass
 
@@ -40,6 +43,13 @@ def packageBase(snipetDef, theEnv) :
 def gitHubDownload(snipetDef, theEnv) :
   """
   download and extract the *.tar.gz sources from a GitHub repository
+
+  The package description MUST define the following environment variables:
+
+    - repoProvider: (only github at the moment)
+    - repoPath: (the GitHub  user/repoName)
+    - repoVersion: (a GitHub release or tag)
+
   """
   pass
 
