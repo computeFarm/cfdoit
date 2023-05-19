@@ -5,6 +5,10 @@ The DSL and associated methods which implement the (executable) task snipets.
 import functools
 import yaml
 
+def snipetExtendList(snipetDef, snipetKey, aList) :
+  if snipetKey not in snipetDef : snipetDef[snipetKey] = []
+  snipetDef[snipetKey].extend(aList)
+
 class TaskSnipets :
 
   taskSnipets = {}
@@ -69,7 +73,7 @@ class TaskSnipets :
     { 'dlsDir'        : '$pkgsDir/downloads' },
     { 'installPrefix' : '../../local'        },
     { 'localDir'      : '$pkgsDir/local'     },
-    { 'includesDir'   : '$localDir/include'  },
+    { 'pkgIncludes'   : '$localDir/include'  },
     { 'pkgLibs'       : '$localDir/libs/lib' },
     { 'systemLibs'    : '-l'                 }
   ]

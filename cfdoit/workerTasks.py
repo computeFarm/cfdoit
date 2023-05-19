@@ -1,7 +1,6 @@
 
 import os
 import pprint
-import sys
 import tempfile
 import yaml
 
@@ -34,8 +33,6 @@ class WInfo(Info) :
     printer = pprint.PrettyPrinter(indent=4, stream=self.outstream)
 
     task = tasks[task_name]
-    #print(yaml.dump(task.actions))
-    #sys.exit(1)
     task_attrs = (
       ('file_dep', 'list'),
       ('task_dep', 'list'),

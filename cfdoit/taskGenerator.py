@@ -3,9 +3,7 @@ The task generator which uses the taskSnipets contained in the task description
 data to automatically generate the required tasks.
 """
 
-import os
 import platform
-import sys
 import re
 import yaml
 
@@ -15,6 +13,9 @@ from cfdoit.config import Config
 from cfdoit.taskSnipets.dsl import TaskSnipets
 import cfdoit.taskSnipets.ansiCSnipets
 import cfdoit.taskSnipets.packageSnipets
+
+#moduleVerbose = True
+moduleVerbose = False
 
 environments = {}
 theSnipets   = None
@@ -56,8 +57,7 @@ def expandEnvironment(snipetName, snipetDef, theEnv) :
   resultListOfEnvDicts = []
   if 'environment' not in snipetDef : return resultListOfEnvDicts
 
-  print(f"    expanding environment for {snipetName}")
-  #print(yaml.dump(theEnv))
+  if moduleVerbose : print(f"    expanding environment for {snipetName}")
 
   # package definitions might NOT bother wrapping their environments in a list
   # so we do it lazily here...
@@ -67,8 +67,6 @@ def expandEnvironment(snipetName, snipetDef, theEnv) :
   for anEnvDict in snipetEnv:
     curKeyList = []
     for aKey, aValue in anEnvDict.items() :
-      #print(aKey)
-      #print(yaml.dump(aValue))
       aValStr = varRe.sub(r"{\1}", aValue)
       try :
         theEnv[aKey] = aValStr.format_map(theEnv)
@@ -189,7 +187,7 @@ def mergeTaskList(aKey, aList, curTask) :
     curTask[aKey].extend(aList)
 
 def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
-  print(f">>> building task from {aName}")
+  if moduleVerbose : print(f">>> building task from {aName}")
   curTask = {}
   if 'snipetDeps' in aDef :
     for aSnipetName in aDef['snipetDeps'] :
@@ -220,11 +218,10 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
 
   if 'doitTaskName' in theEnv :
     if 'actions' in curTask and curTask['actions'] :
-      print(f"    defining task {theEnv['doitTaskName']}")
+      if moduleVerbose : print(f"    defining task {theEnv['doitTaskName']}")
       curTask['basename'] = theEnv['doitTaskName']
       theTasks.append(curTask)
-      #print(yaml.dump(curTask))
-  print(f"<<< building task from {aName}")
+  if moduleVerbose : print(f"<<< building task from {aName}")
 
 def mergeTaskDef(aName, aDef, theEnv) :
   """
@@ -243,7 +240,7 @@ def mergeTaskDef(aName, aDef, theEnv) :
   return taskName
 
 def gen_packageTasks(pkgName, pkgDef, theTasks) :
-  print(f"working on package {pkgName}")
+  if moduleVerbose : print(f"working on package {pkgName}")
   theEnv = {
     'taskName' : pkgName,
     'pkgName'  : pkgName
@@ -255,34 +252,23 @@ def gen_packageTasks(pkgName, pkgDef, theTasks) :
   buildTasksFromDef(taskName, pkgDef, theEnv, theTasks)
 
 def gen_projectTasks(projName, projDef, theTasks) :
-  print(f"working on project {projName}")
+  if moduleVerbose : print(f"working on project {projName}")
   if 'src' in projDef :
     for aSrcName, aSrcDef in projDef['src'].items() :
       theEnv = {
         'taskName'    : aSrcName,
         'srcName'     : aSrcName,
-        'srcBaseName' : os.path.splitext(aSrcName)[0]
       }
       if 'environment' in aSrcDef :
         for aKey, aValue in aSrcDef['environment'].items() :
           theEnv[aKey] = aValue
-      if 'CFLAGS' not in theEnv : theEnv['CFLAGS'] = "-Wall"
-      if 'INCLUDES' not in theEnv : theEnv['INCLUDES'] = "-I$includesDir"
       taskName = mergeTaskDef(aSrcName, aSrcDef, theEnv)+':'+aSrcName
       buildTasksFromDef(taskName, aSrcDef, theEnv, theTasks)
   
-  projLibs = " "
-  if 'fileDependencies' in projDef : 
-    projLibs = " ".join(projDef['fileDependencies'])
-  projSrc = " "
-  if 'src' in projDef :
-    for aSrc in projDef['src'].keys() :
-      projSrc += " "+os.path.splitext(aSrc)[0]+".o"
+
   theEnv = {
     'taskName' : projName,
     'projName' : projName,
-    'LIBS'     : projLibs,
-    'in'       : projSrc
   }
   if 'environment' in projDef :
     for aKey, aValue in projDef['environment'].items() :
@@ -307,20 +293,22 @@ def task_genTasks() :
   if 'packages' in projDesc :
     for aPkgName, aPkgDef in projDesc['packages'].items() :
       gen_packageTasks(aPkgName, aPkgDef, theTasks)
-      print("")
+      if moduleVerbose : print("")
 
   if 'projects' in projDesc :
     for aProjName, aProjDef in projDesc['projects'].items() :
       gen_projectTasks(aProjName, aProjDef, theTasks)
-      print("")
+      if moduleVerbose : print("")
 
-  print("---------------------------------------------------------------------")
+  if moduleVerbose :
+    print("---------------------------------------------------------------------")
 
   for aTask in theTasks :
-    print(f"creating task {aTask['basename']}")
+    if moduleVerbose : print(f"creating task {aTask['basename']}")
     yield aTask
 
-  print("---------------------------------------------------------------------")
+  if moduleVerbose : 
+    print("---------------------------------------------------------------------")
 
   return {
     'basename' : 'doing-nothing',

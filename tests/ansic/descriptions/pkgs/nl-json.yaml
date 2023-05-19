@@ -2,16 +2,17 @@ packages:
   nl-json:
     # https://github.com/nlohmann/json
 
+    taskSnipet: cmakeCompile
+
     environment:
       repoProvider: github
       repoPath: nlohmann/json
       repoVersion: 'v3.11.2'
 
-    targets:
-      - $includesDir/nlohmann/json.hpp
+    created:
+      include:
+        - nlohmann/json.hpp
 
     tools:
       - cmake
       - ninja
-
-    taskSnipet: cmakeCompile

@@ -3,7 +3,9 @@ Task snipets used for downloading, extracting, compiling and then installing
 GitHub packages.
 """
 
-from cfdoit.taskSnipets.dsl import TaskSnipets
+import yaml
+
+from cfdoit.taskSnipets.dsl import TaskSnipets, snipetExtendList
 
 @TaskSnipets.addSnipet('linux', 'packageBase', {
   'snipetDeps'  : [ 'buildBase' ],
@@ -20,7 +22,7 @@ def packageBase(snipetDef, theEnv) :
 @TaskSnipets.addSnipet('linux', 'gitHubDownload', {
   'snipetDeps'  : [ 'packageBase' ],
   'environment' : [
-    { 'doitTaskName' : 'download-install-$taskName'       },
+    { 'doitTaskName' : 'download-extract-$taskName'       },
     { 'url'          : 'https://github.com/${repoPath}/archive/refs/tags/${repoVersion}.tar.gz' },
     { 'tarFile'      : '${pkgName}-${repoVersion}.tar.gz' },
     { 'dlName'       : '$dlsDir/$tarFile'                 }
@@ -57,10 +59,7 @@ def gitHubDownload(snipetDef, theEnv) :
     ],
     'ninja -j $(nproc) install'
   ],
-  'taskDependencies' : [
-    'compile-install-$taskName'
-  ],
-  'fileDependencies' : [
+  'file_dep' : [
     '$pkgDir/CMakeLists.txt'
   ],
   'tools' : [ 'cmake', 'ninja' ]
@@ -68,5 +67,44 @@ def gitHubDownload(snipetDef, theEnv) :
 def cmakeCompile(snipetDef, theEnv) :
   """
   Perform a "standard" CMake compile and install
+
+  We expect one or more of the following (optional) keys in the snipteDef:
+
+    dependencies:
+      packages:
+      libs:
+      includes:
+
+    creates:
+      libs:
+      includes:
   """
-  pass
+  if 'dependencies' in snipetDef :
+    deps = snipetDef['dependencies']
+    if 'packages' in deps :
+      taskDeps = []
+      for aPkgName in deps['packages'] :
+        taskDeps.append(f"download-extract-{aPkgName}")
+    snipetExtendList(snipetDef, 'task_dep', taskDeps)
+
+    fileDeps = []
+    if 'pkgLibs' in deps :
+      for aPkgLib in deps['pkgLibs'] :
+        fileDeps.append(f"${{pkgLibs}}/{aPkgLib}")
+    if 'pkgIncludes' in deps:
+      for aPkgInclude in deps['pkgIncludes'] :
+        fileDeps.append(f"${{pkgIncludes}}/{aPkgInclude}")
+    snipetExtendList(snipetDef, 'file_dep', fileDeps)
+
+  if 'created' in snipetDef :
+    created = snipetDef['created']
+    targets  = []
+    if 'libs' in created :
+      for aLib in created['libs'] :
+        targets.append(f"${{pkgLibs}}/{aLib}")
+    if 'includes' in created :
+      for anInclude in created['includes'] :
+        targets.append(f"${{pkgIncludes}}/{anInclude}")
+    snipetExtendList(snipetDef, 'targets', targets)
+
+  snipetDef['useWorkerTask'] = True

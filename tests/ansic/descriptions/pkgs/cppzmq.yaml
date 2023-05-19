@@ -2,16 +2,17 @@ packages:
   cppzmq:
     # https://github.com/zeromq/cppzmq
 
+    taskSnipet: cmakeCompile
+
     environment:
       repoProvider: github
       repoPath: zeromq/cppzmq
       repoVersion: 'v4.9.0'
 
-    targets:
-      - $includesDir/zmq.h
+    created:
+      includes:
+        - zmq.h
 
     tools:
       - cmake
       - ninja
-
-    taskSnipet: cmakeCompile
