@@ -3,11 +3,23 @@ The DSL and associated methods which implement the (executable) task snipets.
 """
 
 import functools
-import re
+from string import Template
 import yaml
 
-moduleVerbose = True
-#moduleVerbose = False
+#moduleVerbose = True
+moduleVerbose = False
+
+def findEnvInSnipetDef(anEnvKey, snipetDef) :
+  """
+  Search through the `environment` structure (a list of dicts) in a `snipetDef`
+  looking for the key `anEnvKey`.
+
+  Return the value if found, return None otherwise.
+  """
+  if 'environment' not in snipetDef : return None
+  for anEnvItem in snipetDef['environment'] :
+    if anEnvKey in anEnvItem : return anEnvItem[anEnvKey]
+  return None
 
 def snipetExtendList(snipetDef, snipetKey, aList) :
   """
@@ -17,6 +29,9 @@ def snipetExtendList(snipetDef, snipetKey, aList) :
   If the `snipetDef` does not yet contain the key `snipetKey` it will be
   automatically added as a list.
   """
+  if moduleVerbose : 
+    print(f"    extending list {snipetKey}")
+    #print(yaml.dump(aList))
   if snipetKey not in snipetDef : snipetDef[snipetKey] = []
   snipetDef[snipetKey].extend(aList)
 
@@ -93,7 +108,28 @@ def checkVersion(aVersion) :
     return lastVersion == aVersion
   return versionChecker
 
-varRe = re.compile(r'\${?(\w+)}?')
+def expandEnvInStr(aName, aStr, theEnv) :
+  aTemplate = Template(aStr)
+  try :
+    return aTemplate.substitute(theEnv)
+  except KeyError as err :
+    print("-------------------------------------------------------------")
+    print(f"In snipet: {aName}")
+    print(f"Missing key: {err}")
+    print(f"  while trying to expand:")
+    print(f"  [{aStr}]")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(yaml.dump(theEnv))
+    print("-------------------------------------------------------------")
+  except Exception as err :
+    print("-------------------------------------------------------------")
+    print(f"In snipet: {aName}")
+    print(repr(err))
+    print(f"  while trying to expand:")
+    print(f"  [{aStr}]")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print(yaml.dump(theEnv))
+    print("-------------------------------------------------------------")
 
 def expandEnvInEnvironment(snipetName, snipetDef, theEnv) :
   """
@@ -123,19 +159,8 @@ def expandEnvInEnvironment(snipetName, snipetDef, theEnv) :
   for anEnvDict in snipetEnv:
     curKeyList = []
     for aKey, aValue in anEnvDict.items() :
-      aValStr = varRe.sub(r"{\1}", aValue)
-      try :
-        theEnv[aKey] = aValStr.format_map(theEnv)
-        curKeyList.append(aKey)
-      except KeyError as err :
-        print("-------------------------------------------------------------")
-        print(f"In snipet: {snipetName}")
-        print(f"Missing key: {err}")
-        print(f"  while trying to expand:")
-        print(f"  [{aKey}] : [{aValue}]")
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(yaml.dump(theEnv))
-        print("-------------------------------------------------------------")
+      if newValue := expandEnvInStr(snipetName, aValue, theEnv) :
+        theEnv[aKey] = newValue
     curEnv = {}
     for aKey in curKeyList :
       curEnv[aKey] = theEnv[aKey]
@@ -155,33 +180,13 @@ def expandEnvInActions(snipetName, someActions, theEnv) :
   theActions = []
   for anActionLine in someActions :
     if isinstance(anActionLine, str) :
-      anActionStr = varRe.sub(r"{\1}", anActionLine)
-      try :
-        theActions.append(anActionStr.format_map(theEnv))
-      except KeyError as err :
-        print("-------------------------------------------------------------")
-        print(f"In snipet: {snipetName}")
-        print(f"Missing key: {err}")
-        print(f"  while trying to expand:")
-        print(f"  [{anActionLine}]")
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print(yaml.dump(theEnv))
-        print("-------------------------------------------------------------")
+      if newValue := expandEnvInStr(snipetName, anActionLine, theEnv) :
+        theActions.append(newValue)
     elif isinstance(anActionLine, list) :
       theActionLine = []
       for anActionPart in anActionLine :
-        anActionStr = varRe.sub(r"{\1}", anActionPart)
-        try :
-          theActionLine.append(anActionStr.format_map(theEnv))
-        except KeyError as err :
-          print("-------------------------------------------------------------")
-          print(f"In snipet: {snipetName}")
-          print(f"Missing key: {err}")
-          print(f"  while trying to expand:")
-          print(f"  [{anActionPart}]")
-          print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-          print(yaml.dump(theEnv))
-          print("-------------------------------------------------------------")
+        if newValue := expandEnvInStr(snipetName, anActionPart, theEnv) :
+          theActionLine.append(newValue)
       theActions.append(theActionLine)
   return theActions
 
@@ -197,27 +202,19 @@ def expandEnvInUptodates(snipetName, someUptodates, theEnv) :
 
   theUptodates = []
   for anUptodate in someUptodates :
-    anUptodateStr = varRe.sub(r"{\1}", anUptodate)
-    try :
-      anUptodateStr = anUptodateStr.format_map(theEnv)
-      theUptodates.append(eval(anUptodateStr))
-    except KeyError as err :
-      print("-------------------------------------------------------------")
-      print(f"In snipet: {snipetName}")
-      print(f"Missing key: {err}")
-      print(f"  while trying to expand:")
-      print(f"  [{anUptodate}]")
-      print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-      print(yaml.dump(theEnv))
-      print("-------------------------------------------------------------")
-    except Exception as err :
-      print("-------------------------------------------------------------")
-      print(f"In snipet: {snipetName}")
-      print(repr(err))
-      print(f"  while trying to evaluate:")
-      print(f"  [{anUptodateStr}] (expanded)")
-      print(f"  [{anUptodate}] (unexpanded)")
-      print("-------------------------------------------------------------")
+    #anUptodateStr = varRe.sub(r"{\1}", anUptodate)
+    anUptodateTemplate = Template(anUptodate)
+    if newValue := expandEnvInStr(snipetName, anUptodate, theEnv) :
+      try :
+        theUptodates.append(eval(newValue))
+      except Exception as err :
+        print("-------------------------------------------------------------")
+        print(f"In snipet: {snipetName}")
+        print(repr(err))
+        print(f"  while trying to evaluate:")
+        print(f"  [{anUptodateStr}] (expanded)")
+        print(f"  [{anUptodate}] (unexpanded)")
+        print("-------------------------------------------------------------")
   return theUptodates
 
 def expandEnvInList(snipetName, aList, theEnv) :
@@ -228,18 +225,8 @@ def expandEnvInList(snipetName, aList, theEnv) :
   """
   resultList = []
   for anItem in aList :
-    anItemStr = varRe.sub(r"{\1}", anItem)
-    try :
-      resultList.append(anItemStr.format_map(theEnv))
-    except KeyError as err :
-      print("-------------------------------------------------------------")
-      print(f"In snipet: {snipetName}")
-      print(f"Missing key: {err}")
-      print(f"  while trying to expand:")
-      print(f"  [{anItem}]")
-      print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-      print(yaml.dump(theEnv))
-      print("-------------------------------------------------------------")
+    if newValue := expandEnvInStr(snipetName, anItem, theEnv) :
+      resultList.append(newValue)
   return resultList
 
 @TaskSnipets.addSnipet('linux', 'buildBase', {
@@ -249,7 +236,7 @@ def expandEnvInList(snipetName, aList, theEnv) :
     { 'installPrefix' : '../../local'        },
     { 'localDir'      : '$pkgsDir/local'     },
     { 'pkgIncludes'   : '$localDir/include'  },
-    { 'pkgLibs'       : '$localDir/libs/lib' },
+    { 'pkgLibs'       : '$localDir/lib/lib'  },
     { 'systemLibs'    : '-l'                 }
   ]
 })

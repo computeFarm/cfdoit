@@ -16,9 +16,10 @@ from cfdoit.taskSnipets.dsl import (
 )
 import cfdoit.taskSnipets.ansiCSnipets
 import cfdoit.taskSnipets.packageSnipets
+from cfdoit.workerTasks import WorkerTask
 
-moduleVerbose = True
-#moduleVerbose = False
+#moduleVerbose = True
+moduleVerbose = False
 
 environments = {}
 theSnipets   = None
@@ -47,11 +48,22 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
   curTask = {}
 
   taskEnvironment = expandEnvInEnvironment(aName, aDef, theEnv)
-  if 'meta' not in curTask : curTask['meta'] = dict()
-  curTask['meta']['environment'] = theEnv
+  #if 'meta' not in curTask : curTask['meta'] = dict()
+  #curTask['meta']['environment'] = theEnv
 
   if 'actions' in aDef :
-    curTask['actions'] = expandEnvInActions(aName, aDef['actions'], theEnv)
+    theActions = expandEnvInActions(aName, aDef['actions'], theEnv)
+    if 'tools' not in aDef : aDef['tools'] = []
+    if 'useWorkerTask' in aDef :
+      curTask['actions'] = [
+        WorkerTask({
+          'actions'     : theActions,
+          'environment' : theEnv,
+          'tools'       : aDef['tools']
+        })
+      ]
+    else: 
+      curTask['actions'] = theActions
   
   if 'uptodates' in aDef :
     curTask['uptodate'] = expandEnvInUptodates(aName, aDef['uptodates'], theEnv)
@@ -114,6 +126,7 @@ def gen_projectTasks(projName, projDef, theTasks) :
   if 'src' in projDef :
     for aSrcName, aSrcDef in projDef['src'].items() :
       theEnv = {
+        'projName'    : projName,
         'taskName'    : aSrcName,
         'srcName'     : aSrcName,
       }

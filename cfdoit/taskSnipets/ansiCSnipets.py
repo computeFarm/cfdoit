@@ -4,7 +4,9 @@ Task snipets used for compiling, linking and then installing ANSI-C source code.
 import os
 import yaml
 
-from cfdoit.taskSnipets.dsl import TaskSnipets, expandEnvInList
+from cfdoit.taskSnipets.dsl import (
+  TaskSnipets, expandEnvInStr, expandEnvInList, findEnvInSnipetDef
+)
 
 def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
   """
@@ -34,7 +36,7 @@ def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
         srcIncludes.append(aSrcInclude)
     if 'pkgLibs' in deps :
       for aPkgLib in deps['pkgLibs'] :
-        pkgLibs.append(f"${{pkgLibs}}/{aPkgLib}")
+        pkgLibs.append(f"${{pkgLibs}}{aPkgLib}")
     if 'systemLibs' in deps :
       for aSysLib in deps['systemLibs'] :
         systemLibs.append(f"${{systemLibs}}{aSysLib}")
@@ -50,11 +52,13 @@ def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
 @TaskSnipets.addSnipet('linux', 'srcBase', {
   'snipetDeps'  : [ 'buildBase'    ],
   'environment' : [
-    { 'srcDir'     : '.'           },
-    { 'installDir' : '../local'    },
-    { 'where'      : '$installDir' },
-    { 'cc'         : 'gcc'         },
-  ]
+    { 'srcDir'     : '$projName/src' },
+    { 'buildDir'   : 'build'         },
+    { 'installDir' : '$buildDir'     },
+    { 'where'      : '$installDir'   },
+    { 'gpp'        : 'g++'           },
+  ],
+  'useWorkerTask' : True
 })
 def srcBase(snipetDef, theEnv) :
   """
@@ -65,17 +69,21 @@ def srcBase(snipetDef, theEnv) :
   """
   pass
 
-@TaskSnipets.addSnipet('linux', 'gccCompile', {
+@TaskSnipets.addSnipet('linux', 'gppCompile', {
   'snipetDeps'  : [ 'srcBase' ],
   'environment' : [
-    { 'doitTaskName' : 'compile-$taskName' },
-    { 'in'           : '$srcName'          },
-    { 'out'          : '${srcBaseName}.o'  }
+    { 'doitTaskName' : 'compile-$taskName'          },
+    { 'in'           : '$srcDir/$srcName'           },
+    { 'out'          : '$buildDir/${srcBaseName}.o' }
   ],
-  'actions' : [ '$cc $CFLAGS $INCLUDES -c -o $out $in' ],
-  'tools'   : [ 'gcc' ]
+  'actions' : [ 
+    'mkdir -p $buildDir',
+    '$gpp $CFLAGS $INCLUDES -c -o $out $in'
+  ],
+  'tools'   : [ 'g++' ],
+  'useWorkerTask' : True
 })
-def gccCompile(snipetDef, theEnv) :
+def gppCompile(snipetDef, theEnv) :
   """
   Perform a "standard" gcc compile
 
@@ -86,32 +94,37 @@ def gccCompile(snipetDef, theEnv) :
   #print(yaml.dump(snipetDef))
 
   if 'CFLAGS' not in theEnv : theEnv['CFLAGS'] = "-Wall"
-  if 'INCLUDES' not in theEnv : theEnv['INCLUDES'] = "-I$pkgIncludes"
+  if 'INCLUDES' not in theEnv :
+    theEnv['INCLUDES'] = expandEnvInStr('gccCompile',"-I$pkgIncludes", theEnv)
   theEnv['srcBaseName'] = os.path.splitext(theEnv['srcName'])[0]
 
   pkgDeps, pkgLibs, systemLibs, pkgIncludes, srcIncludes = \
     collectAnsiCDependencies('gccCompile', snipetDef, theEnv)
 
-  snipetDef['fileDependencies'] = pkgIncludes + [ theEnv['srcName'] ]
+  snipetDef['fileDependencies'] = pkgIncludes + [
+    findEnvInSnipetDef('in', snipetDef)
+  ]
   snipetDef['taskDependencies'] = pkgDeps
-  snipetDef['targets']          = [ theEnv['srcBaseName']+'.o' ]
+  snipetDef['targets']          = [ 
+    findEnvInSnipetDef('out', snipetDef)
+  ]
 
-  snipetDef['useWorkerTask'] = True
 
-@TaskSnipets.addSnipet('linux', 'gccInstallCommand', {
+@TaskSnipets.addSnipet('linux', 'gppInstallCommand', {
   'snipetDeps'  : ['srcBase' ],
   'environment' : [
-    { 'doitTaskName' : 'link-$taskName' },
-    { 'out'          : '$projName'      },
-    { 'LINKFLAGS'    : ''               },
+    { 'doitTaskName' : 'link-$taskName'      },
+    { 'out'          : '$buildDir/$projName' },
+    { 'LINKFLAGS'    : ' '                   },
   ],
   'actions' : [
-    '$cc -o $out $in $LINKFLAGS $LIBS',
-    'install $out $where'
+    '$gpp -o $out $in $LINKFLAGS $LIBS',
+  #  'install $out $where'
   ],
-  'tools'   : [ 'gcc', 'install' ]
+  'tools'   : [ 'g++', 'install' ],
+  'useWorkerTask' : True
 })
-def gccInstallCommand(snipetDef, theEnv) :
+def gppInstallCommand(snipetDef, theEnv) :
   """
   Perform the creation and install of a "standard" gcc command.
 
@@ -130,8 +143,8 @@ def gccInstallCommand(snipetDef, theEnv) :
   if 'src' in snipetDef :
     for aSrc in snipetDef['src'].keys() :
       srcDeps.append(f"compile-{aSrc}")
-      projSrc.append(os.path.splitext(aSrc)[0]+".o")
-  theEnv['in'] = " ".join(projSrc)
+      projSrc.append(f"$buildDir/{os.path.splitext(aSrc)[0]}.o")
+  theEnv['in'] = " ".join(expandEnvInList('gccInstallCommand', projSrc, theEnv))
 
   targets = []
   if 'created' in snipetDef :
@@ -142,7 +155,6 @@ def gccInstallCommand(snipetDef, theEnv) :
   snipetDef['taskDependencies'] = pkgDeps + srcDeps
   snipetDef['targets']          = targets
 
-  snipetDef['useWorkerTask'] = True
 
 @TaskSnipets.addSnipet('linux', 'gccInstallStaticLibrary', {
   'snipetDeps'  : [ 'srcBase' ],
@@ -154,10 +166,10 @@ def gccInstallCommand(snipetDef, theEnv) :
     '$ar rcs $out $in',
     'install $out $where'
   ],
-  'tool' : [ 'ar', 'install' ]
+  'tool' : [ 'ar', 'install' ],
+  'useWorkerTask' : True
 })
 def gccInstallStaticLibrary(snipetDef, theEnv) :
   """
   Perform the creation and install of a "standard" static library
   """
-  snipetDef['useWorkerTask'] = True

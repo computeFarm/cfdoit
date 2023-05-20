@@ -1,7 +1,7 @@
 
 projects:
   jsonEchoKernel:
-    taskSnipet: gccInstallCommand
+    taskSnipet: gppInstallCommand
     created:
       - jsonEchoKernel
     tools:
@@ -22,9 +22,7 @@ projects:
         - uuid
     src:
       main.cpp:
-        taskSnipet: gccCompile
-        environment:
-          INCLUDES: ""
+        taskSnipet: gppCompile
         dependencies:
           packages:
             - xeus
@@ -38,7 +36,7 @@ projects:
             - jsonEcho.hpp
 
       jsonEcho.cpp:
-        taskSnipet: gccCompile
+        taskSnipet: gppCompile
         dependencies:
           packages:
             - xeus

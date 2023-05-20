@@ -37,8 +37,9 @@ def packageBase(snipetDef, theEnv) :
     'tar xf $dlName --strip-components=1 --directory=$pkgDir'
   ],
   'uptodates' : [ "checkVersion('$repoVersion')" ],
-  'targets'   : [ '$pkgDir/CMakeLists.txt'       ],
-  'tools'     : [ 'curl', 'tar'                  ]
+  'created'   : [ '$pkgDir/CMakeLists.txt'       ],
+  'tools'     : [ 'curl', 'tar'                  ],
+  'useWorkerTask' : True
 })
 def gitHubDownload(snipetDef, theEnv) :
   """
@@ -67,12 +68,18 @@ def gitHubDownload(snipetDef, theEnv) :
       '-D CMAKE_PREFIX_PATH=$installPrefix',
       '-D CMAKE_INSTALL_PREFIX=$installPrefix'
     ],
-    'ninja -j $(nproc) install'
+    'ninja -j $$(nproc) install'
   ],
-  'file_dep' : [
-    '$pkgDir/CMakeLists.txt'
+  'dependencies' : {
+    'files' : [
+      'CMakeLists.txt'
+    ]
+  },
+  'taskDependencies' : [
+    'download-extract-$pkgName'
   ],
-  'tools' : [ 'cmake', 'ninja' ]
+  'tools' : [ 'cmake', 'ninja' ],
+  'useWorkerTask' : True
 })
 def cmakeCompile(snipetDef, theEnv) :
   """
@@ -94,16 +101,19 @@ def cmakeCompile(snipetDef, theEnv) :
     if 'packages' in deps :
       taskDeps = []
       for aPkgName in deps['packages'] :
-        taskDeps.append(f"download-extract-{aPkgName}")
-    snipetExtendList(snipetDef, 'taskDependencies', taskDeps)
+        taskDeps.append(f"compile-install-{aPkgName}")
+      snipetExtendList(snipetDef, 'taskDependencies', taskDeps)
 
     fileDeps = []
     if 'pkgLibs' in deps :
       for aPkgLib in deps['pkgLibs'] :
-        fileDeps.append(f"${{pkgLibs}}/{aPkgLib}")
+        fileDeps.append(f"${{pkgLibs}}{aPkgLib}")
     if 'pkgIncludes' in deps:
       for aPkgInclude in deps['pkgIncludes'] :
         fileDeps.append(f"${{pkgIncludes}}/{aPkgInclude}")
+    if 'files' in deps:
+      for aFile in deps['files'] :
+        fileDeps.append(f"${{pkgDir}}/{aFile}")
     snipetExtendList(snipetDef, 'fileDependencies', fileDeps)
 
   if 'created' in snipetDef :
@@ -116,5 +126,3 @@ def cmakeCompile(snipetDef, theEnv) :
       for anInclude in created['includes'] :
         targets.append(f"${{pkgIncludes}}/{anInclude}")
     snipetExtendList(snipetDef, 'targets', targets)
-
-  snipetDef['useWorkerTask'] = True

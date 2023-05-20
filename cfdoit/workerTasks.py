@@ -129,8 +129,21 @@ class WorkerTask(BaseAction) :
     if 'tools' in actionsDict : self.tools = actionsDict['tools']
     self.env     = {}
     if 'environment' in actionsDict: self.env = actionsDict['environment']
-    self.result  = None
     self.values  = {}
+    self.out     = None
+    self.err     = None
+    self.result  = None
+
+  def __str__(self) :
+    selfStrs = yaml.dump({
+      'actions'     : self.actions,
+      'environment' : self.env,
+      'tools'       : self.tools
+    }).split('\n')
+    selfStr = "\n   ".join(selfStrs)
+    return f"""WorkerTask(
+   {selfStr}
+   )"""
 
   def execute(self, out=None, err=None) :
     """
@@ -161,6 +174,8 @@ class WorkerTask(BaseAction) :
       myAction = CmdAction(tmpFile.name, self.task)
       myAction.execute(out, err)
       self.result = myAction.result
+      self.out    = myAction.out
+      self.err    = myAction.err
       self.values = myAction.values
       os.unlink(tmpFile.name)
     else :
