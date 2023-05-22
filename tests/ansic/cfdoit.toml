@@ -1,6 +1,4 @@
-
-# The project descriptions will be recursively loaded from the following
-# list of paths
+[build]
 descPaths = [
-	'descriptions'
+  "silly"
 ]

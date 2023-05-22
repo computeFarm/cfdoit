@@ -6,6 +6,8 @@ import functools
 from string import Template
 import yaml
 
+from cfdoit.config import Config
+
 #moduleVerbose = True
 moduleVerbose = False
 
@@ -231,7 +233,7 @@ def expandEnvInList(snipetName, aList, theEnv) :
 
 @TaskSnipets.addSnipet('linux', 'buildBase', {
   'environment' : [
-    { 'pkgsDir'       : 'packages'           },
+    { 'pkgsDir'       : '$buildDir/packages' },
     { 'dlsDir'        : '$pkgsDir/downloads' },
     { 'installPrefix' : '../../local'        },
     { 'localDir'      : '$pkgsDir/local'     },
@@ -240,11 +242,14 @@ def expandEnvInList(snipetName, aList, theEnv) :
     { 'systemLibs'    : '-l'                 }
   ]
 })
-def buildBaseSnipet(snipetDef, theEnv) :
+def buildBase(snipetDef, theEnv) :
   """
   Provide the base environment of any linux build system.
  
   This snipet will be merged into ALL other package snipets
   """
-  #print(yaml.dump(snipetDef))
-  #print(yaml.dump(theEnv))
+  buildDir = Config.config['GLOBAL']['build']['dir']
+  if 'platform' in theEnv :
+    theEnv['buildDir'] = f"{buildDir}/{theEnv['platform']}"
+  else :
+    theEnv['buildDir'] = buildDir

@@ -65,24 +65,31 @@ class Config :
   """
 
   # The original `doit` configuration.
-  config       = {}
+  config = {}
 
   # A merge of all of the task descriptions found.
   descriptions = {}
 
-  def getSnipets() :
-    """
-    Return any known `taskSnipets` from the currently loaded task descriptions.
-    """
-    if 'taskSnipets' not in Config.descriptions : return {}
-    return Config.descriptions['taskSnipets']
+  def updateConfig(someConfigData) :
+    Config.mergeData(Config.config, dict(someConfigData), '.')
+
+    # Make sure the 'GLOBAL' key exists...
+    if 'GLOBAL' not in Config.config : Config.config['GLOBAL'] = {}
+    gConfig = Config.config['GLOBAL']
+
+    # Make sure the 'build' key exists...
+    if 'build' not in gConfig : gConfig['build'] = {}
+    bConfig = gConfig['build']
+
+    if 'dir'       not in bConfig : bConfig['dir']       = 'build'
+    if 'platforms' not in bConfig : bConfig['platforms'] = []
 
   def printConfig() :
     """
     Print the original `doit` configuration.
     """
 
-    print(yaml.dump(Config.config))
+    print(yaml.dump(dict(Config.config)))
 
   def printDescriptions() :
     """

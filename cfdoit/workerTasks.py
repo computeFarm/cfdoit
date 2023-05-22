@@ -1,5 +1,6 @@
 
 import os
+import platform
 import pprint
 import tempfile
 import yaml
@@ -155,7 +156,7 @@ class WorkerTask(BaseAction) :
     If no ComputeFarm task manager can be contacted, then this task will
     fallback to simply using the resources of the local computer.
     """
-
+ 
     print(f"Running WorkerTask execute for {self.task}")
 
     workerType = 'local'
@@ -180,3 +181,8 @@ class WorkerTask(BaseAction) :
       os.unlink(tmpFile.name)
     else :
       print(f"WARNING: no valid workers could be found for {self.task}")
+
+  def hasWorkerFor(aPlatform) :
+    thePlatform = platform.system().lower()+'-'+platform.machine().lower()
+    if aPlatform in ['all', thePlatform] : return True
+    return False

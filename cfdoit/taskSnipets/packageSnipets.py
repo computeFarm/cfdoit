@@ -55,8 +55,9 @@ def gitHubDownload(snipetDef, theEnv) :
   pass
 
 @TaskSnipets.addSnipet('linux', 'cmakeCompile', {
-  'snipetDeps'  : [ 'gitHubDownload' ],
-  'environment' : [
+  'snipetDeps'       : [ 'gitHubDownload' ],
+  'platformSpecific' : True,
+  'environment'      : [
     { 'doitTaskName' : 'compile-install-$taskName' }
   ],
   'actions' : [
@@ -76,7 +77,7 @@ def gitHubDownload(snipetDef, theEnv) :
     ]
   },
   'taskDependencies' : [
-    'download-extract-$pkgName'
+    'download-extract-$pkgName-$platform'
   ],
   'tools' : [ 'cmake', 'ninja' ],
   'useWorkerTask' : True
@@ -101,7 +102,7 @@ def cmakeCompile(snipetDef, theEnv) :
     if 'packages' in deps :
       taskDeps = []
       for aPkgName in deps['packages'] :
-        taskDeps.append(f"compile-install-{aPkgName}")
+        taskDeps.append(f"compile-install-{aPkgName}-{theEnv['platform']}")
       snipetExtendList(snipetDef, 'taskDependencies', taskDeps)
 
     fileDeps = []

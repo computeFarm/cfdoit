@@ -1,0 +1,18 @@
+packages:
+  cppzmq:
+    # https://github.com/CLIUtils/CLI11
+
+    taskSnipet: cmakeCompile
+
+    environment:
+      repoProvider: github
+      repoPath: CLIUtils/CLI11
+      repoVersion: 'v2.3.2'
+
+    created:
+      includes:
+        - CLI/CLI.hpp
+
+    tools:
+      - cmake
+      - ninja

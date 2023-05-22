@@ -4,8 +4,6 @@ projects:
     taskSnipet: gppInstallCommand
     created:
       - jsonEchoKernel
-    tools:
-      - cpp
     dependencies:
       packages:
         - xeus

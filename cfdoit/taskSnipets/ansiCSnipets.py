@@ -27,7 +27,7 @@ def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
     deps = snipetDef['dependencies']
     if 'packages' in deps :
       for aPkgDep in deps['packages'] :
-        pkgDeps.append(f"compile-install-{aPkgDep}")
+        pkgDeps.append(f"compile-install-{aPkgDep}-{theEnv['platform']}")
     if 'pkgIncludes' in deps :
       for aPkgInclude in deps['pkgIncludes'] :
         pkgIncludes.append(f"${{pkgIncludes}}/{aPkgInclude}")
@@ -53,7 +53,6 @@ def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
   'snipetDeps'  : [ 'buildBase'    ],
   'environment' : [
     { 'srcDir'     : '$projName/src' },
-    { 'buildDir'   : 'build'         },
     { 'installDir' : '$buildDir'     },
     { 'where'      : '$installDir'   },
     { 'gpp'        : 'g++'           },
@@ -70,8 +69,9 @@ def srcBase(snipetDef, theEnv) :
   pass
 
 @TaskSnipets.addSnipet('linux', 'gppCompile', {
-  'snipetDeps'  : [ 'srcBase' ],
-  'environment' : [
+  'snipetDeps'       : [ 'srcBase' ],
+  'platformSpecific' : True,
+  'environment'      : [
     { 'doitTaskName' : 'compile-$taskName'          },
     { 'in'           : '$srcDir/$srcName'           },
     { 'out'          : '$buildDir/${srcBaseName}.o' }
@@ -111,8 +111,9 @@ def gppCompile(snipetDef, theEnv) :
 
 
 @TaskSnipets.addSnipet('linux', 'gppInstallCommand', {
-  'snipetDeps'  : ['srcBase' ],
-  'environment' : [
+  'snipetDeps'       : ['srcBase' ],
+  'platformSpecific' : True,
+  'environment'      : [
     { 'doitTaskName' : 'link-$taskName'      },
     { 'out'          : '$buildDir/$projName' },
     { 'LINKFLAGS'    : ' '                   },
@@ -142,7 +143,7 @@ def gppInstallCommand(snipetDef, theEnv) :
   srcDeps = []
   if 'src' in snipetDef :
     for aSrc in snipetDef['src'].keys() :
-      srcDeps.append(f"compile-{aSrc}")
+      srcDeps.append(f"compile-{aSrc}-{theEnv['platform']}")
       projSrc.append(f"$buildDir/{os.path.splitext(aSrc)[0]}.o")
   theEnv['in'] = " ".join(expandEnvInList('gccInstallCommand', projSrc, theEnv))
 
@@ -157,8 +158,9 @@ def gppInstallCommand(snipetDef, theEnv) :
 
 
 @TaskSnipets.addSnipet('linux', 'gccInstallStaticLibrary', {
-  'snipetDeps'  : [ 'srcBase' ],
-  'environment' : [
+  'snipetDeps'       : [ 'srcBase' ],
+  'platformSpecific' : True,
+  'environment'      : [
     { 'doitTaskName' : 'library-$taskName' },
     { 'ar'           : 'ar'                }
   ],

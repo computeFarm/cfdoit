@@ -56,7 +56,7 @@ def cli() :
   )
 
   Config.mergeData(doitMain.config, cfdoitConfig, '.')
-  Config.config = doitMain.config
+  Config.updateConfig(doitMain.config)
   Config.loadDescriptions()
 
   sys.exit(doitMain.run(sys.argv[1:]))

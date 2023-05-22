@@ -3,7 +3,9 @@ The task generator which uses the taskSnipets contained in the task description
 data to automatically generate the required tasks.
 """
 
+import copy
 import platform
+import sys
 import yaml
 
 from doit.task import dict_to_task
@@ -78,6 +80,8 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
     curTask['file_dep'] = expandEnvInList(aName, aDef['fileDependencies'], theEnv)
 
   if 'doitTaskName' in theEnv :
+    if 'platform' in theEnv :
+      theEnv['doitTaskName'] = theEnv['doitTaskName']+'-'+theEnv['platform']
     if 'actions' in curTask and curTask['actions'] :
       if moduleVerbose : print(f"    defining task {theEnv['doitTaskName']}")
       curTask['basename'] = theEnv['doitTaskName']
@@ -99,6 +103,25 @@ def mergeTaskDef(aName, aDef, theEnv) :
       Config.mergeData(aDef, theSnipets[aSnipetName], '.')
   return taskName
 
+def buildPlatformTasksFromDef(aName, aDef, theEnv, theTasks) :
+  buildConf = Config.config['GLOBAL']['build']
+  platforms = []
+  if 'platformSpecific' in aDef and 'platforms' in buildConf :
+    platforms.extend(buildConf['platforms'])
+  else :
+    platforms.append('all')
+
+  for aPlatform in platforms :
+    if not WorkerTask.hasWorkerFor(aPlatform) : continue
+    
+    platformEnv = copy.deepcopy(theEnv)
+    platformDef = copy.deepcopy(aDef)
+
+    platformEnv['platform'] = aPlatform
+    platformDef['platform'] = aPlatform
+
+    buildTasksFromDef(aName, platformDef, platformEnv, theTasks)
+
 def gen_packageTasks(pkgName, pkgDef, theTasks) :
   """
   Generate the doit tasks required to download and install a given package.
@@ -112,7 +135,7 @@ def gen_packageTasks(pkgName, pkgDef, theTasks) :
     for aKey, aValue in pkgDef['environment'].items() :
       theEnv[aKey] = aValue
   taskName = mergeTaskDef(pkgName, pkgDef, theEnv)
-  buildTasksFromDef(taskName, pkgDef, theEnv, theTasks)
+  buildPlatformTasksFromDef(taskName, pkgDef, theEnv, theTasks)
   if 'doitTaskName' in theEnv : return theEnv['doitTaskName']
   return None
 
@@ -134,7 +157,7 @@ def gen_projectTasks(projName, projDef, theTasks) :
         for aKey, aValue in aSrcDef['environment'].items() :
           theEnv[aKey] = aValue
       taskName = mergeTaskDef(aSrcName, aSrcDef, theEnv)+':'+aSrcName
-      buildTasksFromDef(taskName, aSrcDef, theEnv, theTasks)
+      buildPlatformTasksFromDef(taskName, aSrcDef, theEnv, theTasks)
   
   theEnv = {
     'taskName' : projName,
@@ -144,7 +167,7 @@ def gen_projectTasks(projName, projDef, theTasks) :
     for aKey, aValue in projDef['environment'].items() :
       theEnv[aKey] = aValue
   taskName = mergeTaskDef(projName, projDef, theEnv)
-  buildTasksFromDef(taskName, projDef, theEnv, theTasks)
+  buildPlatformTasksFromDef(taskName, projDef, theEnv, theTasks)
   if 'doitTaskName' in theEnv : return theEnv['doitTaskName']
   return None
 
