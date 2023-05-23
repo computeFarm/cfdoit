@@ -4,7 +4,7 @@
 #include "xeus/xkernel_configuration.hpp"
 #include "xeus-zmq/xserver_zmq.hpp"
 
-#include "jsonEcho.hpp"
+#include "jeClass.hpp"
 
 int main(int argc, char* argv[]) {
   std::string fileName = (argc == 1) ? "connection.json" : argv[2];
@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
   interpreter_ptr interpreter = interpreter_ptr(new jsonEcho::JsonEcho());
 
   xeus::xkernel kernel(
-    config, xeus::get_user_name(), 
+    config, xeus::get_user_name(),
     std::move(context), std::move(interpreter),
     xeus::make_xserver_zmq
   );

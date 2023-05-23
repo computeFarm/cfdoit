@@ -1,5 +1,5 @@
 
-#include "jsonEcho.hpp"
+#include "jeClass.hpp"
 
 #include "xeus/xhelper.hpp"
 
@@ -20,7 +20,7 @@ nl::json jsonEcho::JsonEcho::execute_request_impl(
     bool silent,
     bool storeHistory,
     nl::json userExpressions,
-    bool allowStdIn  
+    bool allowStdIn
 ) {
 
   auto errorType = "Unknown";
@@ -59,12 +59,12 @@ nl::json jsonEcho::JsonEcho::execute_request_impl(
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// Provide the user with some code completion information 
+// Provide the user with some code completion information
 // at the cursor position...
 //
 nl::json jsonEcho::JsonEcho::complete_request_impl(
   const std::string& code,
-  int cursorPos  
+  int cursorPos
 ) {
   return xeus::create_complete_reply({}, cursorPos, cursorPos);
 }
@@ -75,7 +75,7 @@ nl::json jsonEcho::JsonEcho::complete_request_impl(
 nl::json jsonEcho::JsonEcho::inspect_request_impl(
   const std::string& code,
   int cursorPos,
-  int detailLevel  
+  int detailLevel
 ) {
   return xeus::create_inspect_reply();
 }
@@ -94,7 +94,7 @@ nl::json jsonEcho::JsonEcho::is_complete_request_impl(
   } catch ( nl::json::parse_error& err ) {
     return xeus::create_is_complete_reply("incomplete");
   } catch (...) {
-  }  
+  }
   return xeus::create_is_complete_reply("invalid");
 }
 

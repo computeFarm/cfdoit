@@ -18,26 +18,29 @@ projects:
         - crypto
         - sodium
         - uuid
-    src:
-      main.cpp:
-        taskSnipet: gppCompile
-        dependencies:
-          packages:
-            - xeus
-            - xeus-zmq
-        dependencies:
-          pkgIncludes:
-            - xeus/xkernel.hpp
-            - xeus/xkernel_configuration.hpp
-            - xeus-zmq/xserver_zmq.hpp
-          srcIncludes:
-            - jsonEcho.hpp
-
-      jsonEcho.cpp:
-        taskSnipet: gppCompile
-        dependencies:
-          packages:
-            - xeus
-        dependencies:
-          pkgIncludes:
-            - xeus/xhelper.hpp
+      cObj:
+        - jeMain.o
+        - jeClass.o
+  jeMain:
+    taskSnipet: gppCompile
+    created:
+      - jeMain.o
+    dependencies:
+      packages:
+        - xeus
+        - xeus-zmq
+      pkgIncludes:
+        - xeus/xkernel.hpp
+        - xeus/xkernel_configuration.hpp
+        - xeus-zmq/xserver_zmq.hpp
+      srcIncludes:
+        - jsonEcho.hpp
+  jeClass:
+    taskSnipet: gppCompile
+    created:
+      - jeClass.o
+    dependencies:
+      packages:
+        - xeus
+      pkgIncludes:
+        - xeus/xhelper.hpp
