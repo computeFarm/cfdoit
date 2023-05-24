@@ -20,8 +20,8 @@ import cfdoit.taskSnipets.ansiCSnipets
 import cfdoit.taskSnipets.packageSnipets
 from cfdoit.workerTasks import WorkerTask
 
-#moduleVerbose = True
-moduleVerbose = False
+moduleVerbose = True
+#moduleVerbose = False
 
 environments = {}
 theSnipets   = None
@@ -146,6 +146,8 @@ def gen_projectTasks(projName, projDef, theTasks) :
   (At the moment this build process is focused on building ANSI-C commands).
   """
   if moduleVerbose : print(f"working on project {projName}")
+
+  """
   if 'src' in projDef :
     for aSrcName, aSrcDef in projDef['src'].items() :
       theEnv = {
@@ -158,7 +160,8 @@ def gen_projectTasks(projName, projDef, theTasks) :
           theEnv[aKey] = aValue
       taskName = mergeTaskDef(aSrcName, aSrcDef, theEnv)+':'+aSrcName
       buildPlatformTasksFromDef(taskName, aSrcDef, theEnv, theTasks)
-  
+  """
+
   theEnv = {
     'taskName' : projName,
     'projName' : projName,

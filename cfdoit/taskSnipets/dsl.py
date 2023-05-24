@@ -8,8 +8,8 @@ import yaml
 
 from cfdoit.config import Config
 
-#moduleVerbose = True
-moduleVerbose = False
+moduleVerbose = True
+#moduleVerbose = False
 
 def findEnvInSnipetDef(anEnvKey, snipetDef) :
   """
@@ -248,7 +248,12 @@ def buildBase(snipetDef, theEnv) :
  
   This snipet will be merged into ALL other package snipets
   """
-  buildDir = Config.config['GLOBAL']['build']['dir']
+  buildDir = 'build'
+  if 'GLOBAL' in Config.config :
+    if 'build' in Config.config['GLOBAL'] :
+      if 'buildDir' in Config.config['GLOBAL']['build'] :
+        buildDir = Config.config['GLOBAL']['build']['buildDir']
+  theEnv['baseBuildDir'] = buildDir
   if 'platform' in theEnv :
     theEnv['buildDir'] = f"{buildDir}/{theEnv['platform']}"
   else :

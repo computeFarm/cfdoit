@@ -158,9 +158,16 @@ class Config :
     loadDescriptionsFromModule('cfdoit.taskDescriptions', descriptions)
 
     descPaths = [ ]
-    if 'descPaths' in Config.config['GLOBAL'] :
-      descPaths = Config.config['GLOBAL']['descPaths']
+    buildDir  = '.'
+    if 'build' in Config.config['GLOBAL'] :
+      bConfig = Config.config['GLOBAL']['build']
+      if 'descPaths' in bConfig : descPaths = bConfig['descPaths']
+      if 'projDescPath' in bConfig : descPaths.insert(0, bConfig['projDescPath'])
+      if 'buildDir'  in bConfig : buildDir  = bConfig['buildDir']
     for aDescPath in descPaths :
+      if '$buildDir' in aDescPath :
+        aDescPath = aDescPath.replace('$buildDir', buildDir)
+        print(aDescPath)
       recursivelyLoadDescriptions(aDescPath, descriptions)
 
     Config.descriptions = descriptions
