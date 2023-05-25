@@ -80,15 +80,21 @@ class WInfo(Info) :
 
     return retcode
 
-def compileActionScript(someEnvs, someActions) :
+def compileActionScript(someAliases, someEnvs, someActions) :
   """
   Create a (unix) shell script which can run the actions specified by the
-  `someActions` (list) parameter using (unix shell) environment variables
-  specified in the `someEnvs` (dict) parameter.
+  `someActions` (list of lists or strings) parameter using (unix shell)
+  environment variables specified in the `someEnvs` (list of dicts) parameter as
+  well as the aliases specified in the `someAliases` (dict) parameter.
   """
 
   actionScript = []
   actionScript.append("#!/bin/sh")
+
+  actionsScript.append("# export the aliases...")
+  if isinstance(someAliases, dict) :
+    for aKey, aValue in someAliases.items() :
+      actionScript.append(f"alias {aKey}=\"{aValue}\"")
 
   actionScript.append("# export the environment...")
   if isinstance(someEnvs, list) :
