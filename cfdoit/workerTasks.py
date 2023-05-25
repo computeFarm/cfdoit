@@ -112,6 +112,12 @@ class WorkerTask(BaseAction) :
   remote task distribution system.
 
   At the moment ONLY the "local" worker is implemented.
+
+  NOTE: when the `num_process` configuration parameter is not zero, `doit` (and
+  hence `cfdoit`) runs individual tasks using either the threading.Thread or
+  multiprocessing.Process classes (see the `par_type` configuration parameter).
+  This means WorkerTask MUST be thread/process aware. In particular there MUST
+  NOT BE any globals!!!!
   """
 
   def __init__(self, actionsDict) :
@@ -145,6 +151,18 @@ class WorkerTask(BaseAction) :
     return f"""WorkerTask(
    {selfStr}
    )"""
+
+  def getWorkerTypes() :
+    """
+    Connect to the taskManager and (re)request the currently registered types of
+    workers.
+    """
+    pass
+
+  def hasWorkerFor(aPlatform) :
+    thePlatform = platform.system().lower()+'-'+platform.machine().lower()
+    if aPlatform in ['all', thePlatform] : return True
+    return False
 
   def execute(self, out=None, err=None) :
     """
@@ -182,7 +200,3 @@ class WorkerTask(BaseAction) :
     else :
       print(f"WARNING: no valid workers could be found for {self.task}")
 
-  def hasWorkerFor(aPlatform) :
-    thePlatform = platform.system().lower()+'-'+platform.machine().lower()
-    if aPlatform in ['all', thePlatform] : return True
-    return False
