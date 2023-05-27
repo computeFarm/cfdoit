@@ -142,6 +142,8 @@ class WorkerTask(BaseAction) :
     if 'tools' in actionsDict : self.tools = actionsDict['tools']
     self.env     = {}
     if 'environment' in actionsDict: self.env = actionsDict['environment']
+    self.aliases = {}
+    if 'aliases' in actionsDict: self.aliases = actionsDict['aliases']
     self.values  = {}
     self.out     = None
     self.err     = None
@@ -182,12 +184,13 @@ class WorkerTask(BaseAction) :
     """
  
     print(f"Running WorkerTask execute for {self.task}")
+    #print(f"WARNING: no valid workers could be found for {self.task}")
 
     workerType = 'local'
 
     if workerType == 'local' :
       # lob it over the fence and hope it works!
-      actionScript = compileActionScript(self.env, self.actions)
+      actionScript = compileActionScript(self.aliases, self.env, self.actions)
       #print("---------------------------------------")
       #print(actionScript)
       #print("---------------------------------------")
@@ -204,5 +207,4 @@ class WorkerTask(BaseAction) :
       self.values = myAction.values
       os.unlink(tmpFile.name)
     else :
-      print(f"WARNING: no valid workers could be found for {self.task}")
-
+      pass
