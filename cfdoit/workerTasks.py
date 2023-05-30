@@ -11,6 +11,10 @@ from doit.cmd_info   import opt_hide_status, Info
 from doit.exceptions import InvalidCommand
 
 from cfdoit.config import Config
+from cfdoit.computeFarmTools import (
+  tcpTMConnection, tcpTMSentRequest, tcpTMGetResult,
+  tcpTMCollectResults, tcpTMCloseConnection, compileActionScript
+)
 
 # copied from pydoit/cmd_info:Info._execute
 #
@@ -80,38 +84,6 @@ class WInfo(Info) :
 
     return retcode
 
-def compileActionScript(someAliases, someEnvs, someActions) :
-  """
-  Create a (unix) shell script which can run the actions specified by the
-  `someActions` (list of lists or strings) parameter using (unix shell)
-  environment variables specified in the `someEnvs` (list of dicts) parameter as
-  well as the aliases specified in the `someAliases` (dict) parameter.
-  """
-
-  actionScript = []
-  actionScript.append("#!/bin/sh")
-
-  actionsScript.append("# export the aliases...")
-  if isinstance(someAliases, dict) :
-    for aKey, aValue in someAliases.items() :
-      actionScript.append(f"alias {aKey}=\"{aValue}\"")
-
-  actionScript.append("# export the environment...")
-  if isinstance(someEnvs, list) :
-    for anEnv in someEnvs :
-      if isinstance(anEnv, dict) :
-        for aKey, aValue in anEnv.items() :
-          actionScript.append(f"export {aKey}=\"{aValue}\"")
-
-  actionScript.append("# now run the actions...")
-  for anAction in someActions :
-    if isinstance(anAction, str) :
-      actionScript.append(anAction)
-    elif isinstance(anAction, list) :
-      actionScript.append(" ".join(anAction))
-
-  return "\n\n".join(actionScript)
-
 class WorkerTask(BaseAction) :
   """
   The bridge between the "standard" `doit` task running and the ComputeFarm
@@ -125,6 +97,9 @@ class WorkerTask(BaseAction) :
   This means WorkerTask MUST be thread/process aware. In particular there MUST
   NOT BE any globals!!!!
   """
+
+  availablePlatforms = None
+  availableTools     = None
 
   def __init__(self, actionsDict) :
     """
@@ -165,11 +140,47 @@ class WorkerTask(BaseAction) :
     Connect to the taskManager and (re)request the currently registered types of
     workers.
     """
-    pass
+    queryRequest = {
+      'progName' : "",
+      'host'     : "127.0.0.1",
+      'port'     : 8888,
+      'type'     : "workerQuery",
+      'taskName' : "workerQuery",
+      'taskType' : "workerQuery",
+      'verbose'  : False
+    }
+
+    thisPlatform = platform.system().lower()+'-'+platform.machine().lower()
+    WorkerTask.availablePlatforms = ['all', thisPlatform]
+
+    tmSocket = tcpTMConnection(queryRequest)
+    if tmSocket :
+      if tcpTMSentRequest(queryRequest, tmSocket) :
+        result = tcpTMGetResult(tmSocket)
+        tcpTMCloseConnection(tmSocket)
+        if 'tools'     in result : WorkerTask.availableTools  = result['tools']
+        if 'workers'   in result : WorkerTask.avaialbeWorkers = result['workers']
+        if 'hostTypes' in result : 
+          for aPlatform in result['hostTypes'] :
+            for aCpu in result['hostTypes'][aPlatform] :
+              WorkerTask.availablePlatforms.append(
+                f"{aPlatform.lower()}-{aCpu.lower()}"
+              )
+  
+    #print(yaml.dump(WorkerTask.availablePlatforms))
 
   def hasWorkerFor(aPlatform) :
-    thePlatform = platform.system().lower()+'-'+platform.machine().lower()
-    if aPlatform in ['all', thePlatform] : return True
+
+    # start by trying to access the taskManager
+    if WorkerTask.availablePlatforms is None :
+      WorkerTask.getWorkerTypes()
+
+    # if there is no taskManager.... fall back to this local platform
+    if WorkerTask.availablePlatforms is None :
+      thisPlatform = platform.system().lower()+'-'+platform.machine().lower()
+      WorkerTask.availablePlatforms = ['all', thisPlatform ]
+
+    if aPlatform in WorkerTask.availablePlatforms : return True
     return False
 
   def execute(self, out=None, err=None) :
@@ -207,4 +218,13 @@ class WorkerTask(BaseAction) :
       self.values = myAction.values
       os.unlink(tmpFile.name)
     else :
-      pass
+      tmSocket = tcpTMConnection(taskRequest)
+      tmStdout = ""
+      tmResult = 1
+      if tmSocket :
+        if tcpTMSentRequest(taskRequest, tmSocket) :
+          tmStdout, tmResult = tcpTMCollectResults(tmSocket)
+      self.result = tmResult
+      self.out    = tmStdout
+      self.err    = ""
+      # self.values = ???

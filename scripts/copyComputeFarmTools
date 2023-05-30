@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cp                                         \
+  ../pyComputeFarm/rcf/computeFarmTools.py \
+  cfdoit
+
