@@ -4,6 +4,7 @@ data to automatically generate the required tasks.
 """
 
 import copy
+import os
 import platform
 import sys
 import yaml
@@ -47,6 +48,28 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
   if moduleVerbose : print(f"    running {aName}'s snipet function")
   aDef['snipetFunc'](aDef, theEnv)
 
+  # now check that there *are* available workers for this task...
+  requiredTools = []
+  if 'tools' in aDef : requiredTools = aDef['tools']
+  requiredPlatform = 'any'
+  if 'platform' in aDef : requiredPlatform = aDef['platform']
+  availableWorkers = WorkerTask.getWorkersFor(
+    requiredPlatform, requiredTools
+  )
+  # if there are no available workers... there is nothing more to do...
+  if not availableWorkers :
+    print(f"No available workers found for the {aName} task\n")
+    print(f"required platform: {requiredPlatform}")
+    print("required tools:")
+    print(yaml.dump(requiredTools))
+    WorkerTask.printWorkerInformation()
+    return
+
+  baseDir = WorkerTask.getBasePathFor(os.path.abspath(os.getcwd()))
+  if baseDir is None :
+    print(f"ComputeFarm can not build in the current directory for the {aName} task")
+    return
+
   curTask = {}
 
   taskEnvironment = expandEnvInEnvironment(aName, aDef, theEnv)
@@ -61,7 +84,9 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
         WorkerTask({
           'actions'     : theActions,
           'environment' : theEnv,
-          'tools'       : aDef['tools']
+          'tools'       : requiredTools,
+          'workers'     : availableWorkers,
+          'baseDir'     : baseDir
         })
       ]
     else: 
@@ -109,10 +134,10 @@ def buildPlatformTasksFromDef(aName, aDef, theEnv, theTasks) :
   if 'platformSpecific' in aDef and 'platforms' in buildConf :
     platforms.extend(buildConf['platforms'])
   else :
-    platforms.append('all')
+    platforms.append('any')
 
   for aPlatform in platforms :
-    if not WorkerTask.hasWorkerFor(aPlatform) : continue
+    if not WorkerTask.canBuildOn(aPlatform) : continue
     
     platformEnv = copy.deepcopy(theEnv)
     platformDef = copy.deepcopy(aDef)

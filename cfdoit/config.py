@@ -81,6 +81,11 @@ class Config :
     if 'build' not in gConfig : gConfig['build'] = {}
     bConfig = gConfig['build']
 
+    if 'taskManager' not in gConfig : gConfig['taskManager'] = {}
+    tmConfig = gConfig['taskManager']
+    if 'host' not in tmConfig : tmConfig['host'] = '127.0.0.1'
+    if 'port' not in tmConfig : tmConfig['port'] = 8888
+
     if 'dir'       not in bConfig : bConfig['dir']       = 'build'
     if 'platforms' not in bConfig : bConfig['platforms'] = []
 

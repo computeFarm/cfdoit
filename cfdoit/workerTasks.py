@@ -99,7 +99,9 @@ class WorkerTask(BaseAction) :
   """
 
   availablePlatforms = None
-  availableTools     = None
+  availableTools     = {}
+  availableWorkers   = {}
+  baseDirectory      = os.path.abspath(os.getcwd())
 
   def __init__(self, actionsDict) :
     """
@@ -112,13 +114,20 @@ class WorkerTask(BaseAction) :
     """
 
     self.actions = []
-    if 'actions' in actionsDict : self.actions = actionsDict['actions']
+    if 'actions'     in actionsDict : self.actions = actionsDict['actions']
     self.tools   = []
-    if 'tools' in actionsDict : self.tools = actionsDict['tools']
+    if 'tools'       in actionsDict : self.tools   = actionsDict['tools']
+    self.workers = []
+    if 'workers'     in actionsDict : self.workers = actionsDict['workers']
     self.env     = {}
-    if 'environment' in actionsDict: self.env = actionsDict['environment']
+    if 'environment' in actionsDict : self.env     = actionsDict['environment']
     self.aliases = {}
-    if 'aliases' in actionsDict: self.aliases = actionsDict['aliases']
+    if 'aliases'     in actionsDict : self.aliases = actionsDict['aliases']
+    self.baseDir = '.'
+    if 'baseDir'     in actionsDict : self.baseDir = actionsDict['baseDir']
+    self.requiredPlatform = None
+    if 'requiredPlatform' in actionsDict : 
+      self.requiredPlatform = actionsDict['requriedPlatform']
     self.values  = {}
     self.out     = None
     self.err     = None
@@ -128,7 +137,11 @@ class WorkerTask(BaseAction) :
     selfStrs = yaml.dump({
       'actions'     : self.actions,
       'environment' : self.env,
-      'tools'       : self.tools
+      'tools'       : self.tools,
+      'workers'     : self.workers,
+      'aliases'     : self.aliases,
+      'platform'    : self.requiredPlatform,
+      'baseDir'     : self.baseDir
     }).split('\n')
     selfStr = "\n   ".join(selfStrs)
     return f"""WorkerTask(
@@ -151,37 +164,89 @@ class WorkerTask(BaseAction) :
     }
 
     thisPlatform = platform.system().lower()+'-'+platform.machine().lower()
-    WorkerTask.availablePlatforms = ['all', thisPlatform]
+    WorkerTask.availablePlatforms = {
+      'any'        : True, 
+      thisPlatform : True
+    }
 
     tmSocket = tcpTMConnection(queryRequest)
     if tmSocket :
       if tcpTMSentRequest(queryRequest, tmSocket) :
         result = tcpTMGetResult(tmSocket)
         tcpTMCloseConnection(tmSocket)
-        if 'tools'     in result : WorkerTask.availableTools  = result['tools']
-        if 'workers'   in result : WorkerTask.avaialbeWorkers = result['workers']
-        if 'hostTypes' in result : 
-          for aPlatform in result['hostTypes'] :
-            for aCpu in result['hostTypes'][aPlatform] :
-              WorkerTask.availablePlatforms.append(
-                f"{aPlatform.lower()}-{aCpu.lower()}"
-              )
-  
-    #print(yaml.dump(WorkerTask.availablePlatforms))
+        if 'tools'     in result :
+          WorkerTask.availableTools     = result['tools']
+        if 'workers'   in result :
+          WorkerTask.availableWorkers   = result['workers']
+        if 'hostTypes' in result :
+          WorkerTask.availablePlatforms = result['hostTypes']
+        if 'files'     in result :
+          if 'orig' in result['files'] :
+            WorkerTask.baseDirectory = os.path.abspath(os.path.join(
+              os.path.expanduser('~'),
+              result['files']['orig']
+            ))
+    WorkerTask.availablePlatforms['any'] = True
 
-  def hasWorkerFor(aPlatform) :
+  def printWorkerInformation() :
+    print("--computeFarm-workerInformation------------------------------------")
+    print(yaml.dump({
+      'availablePlatforms' : WorkerTask.availablePlatforms,
+      'availableTools'     : WorkerTask.availableTools,
+      'availableWorkers'   : WorkerTask.availableWorkers,
+      'baseDirectory'      : WorkerTask.baseDirectory
+    }))
+    print("-------------------------------------------------------------------")
+
+  def getBasePathFor(aDir) :
+    # start by trying to access the taskManager
+    if WorkerTask.availablePlatforms is None : WorkerTask.getWorkerTypes()
+
+    if aDir.startswith(WorkerTask.baseDirectory) : 
+      return aDir.replace(WorkerTask.baseDirectory, '.')
+    return None
+
+  def canBuildOn(aPlatform) :
+    # start by trying to access the taskManager
+    if WorkerTask.availablePlatforms is None : WorkerTask.getWorkerTypes()
+
+    # first check if the platform is known to the taskManager
+    if aPlatform not in WorkerTask.availablePlatforms    : return False
+    return True
+
+  def getWorkersFor(aPlatform, requiredTools=[]) :
 
     # start by trying to access the taskManager
-    if WorkerTask.availablePlatforms is None :
-      WorkerTask.getWorkerTypes()
+    if WorkerTask.availablePlatforms is None : WorkerTask.getWorkerTypes()
 
-    # if there is no taskManager.... fall back to this local platform
-    if WorkerTask.availablePlatforms is None :
-      thisPlatform = platform.system().lower()+'-'+platform.machine().lower()
-      WorkerTask.availablePlatforms = ['all', thisPlatform ]
+    # first check if the platform is known to the taskManager
+    if aPlatform not in WorkerTask.availablePlatforms : return []
 
-    if aPlatform in WorkerTask.availablePlatforms : return True
-    return False
+    # IF the platform is True (as opposed to a "set" of workerTypes ), then we
+    # are working locally...
+    if WorkerTask.availablePlatforms[aPlatform] is True : return [ 'localWorker' ]
+
+    # now see if there are any workers who can handled the required tools
+    workersFound = {}
+    for aWorker in WorkerTask.availableWorkers.keys() :
+      workersFound[aWorker] = True
+
+    if not isinstance(requiredTools, list) : requiredTools = [ requiredTools ]
+    for aTool in requiredTools :
+      if aTool not in WorkerTask.availableTools :
+        workersFound = {}
+        break
+      workers2delete = []
+      for aWorkerType in workersFound :
+          if aWorkerType not in WorkerTask.availableTools[aTool] :
+            workers2delete.append(aWorkerType)
+          if WorkerTask.availablePlatforms[aPlatform] is True : continue
+          if aWorkerType not in WorkerTask.availablePlatforms[aPlatform] :
+            workers2delete.append(aWorkerType)
+      for aWorkerType in workers2delete :
+        if aWorkerType in workersFound : del workersFound[aWorkerType]
+
+    return list(workersFound)
 
   def execute(self, out=None, err=None) :
     """
@@ -195,36 +260,51 @@ class WorkerTask(BaseAction) :
     """
  
     print(f"Running WorkerTask execute for {self.task}")
-    #print(f"WARNING: no valid workers could be found for {self.task}")
 
-    workerType = 'local'
-
-    if workerType == 'local' :
-      # lob it over the fence and hope it works!
-      actionScript = compileActionScript(self.aliases, self.env, self.actions)
-      #print("---------------------------------------")
-      #print(actionScript)
-      #print("---------------------------------------")
-      tmpFile = tempfile.NamedTemporaryFile(prefix='cfdoit-LocalWorkerTask-', delete=False)
-      tmpFile.write(actionScript.encode("utf8"))
-      tmpFile.close()
-      os.chmod(tmpFile.name, 0o755)
-      print(f"Running local workerTask {tmpFile.name} as CmdAction for {self.task}")
-      myAction = CmdAction(tmpFile.name, self.task)
-      myAction.execute(out, err)
-      self.result = myAction.result
-      self.out    = myAction.out
-      self.err    = myAction.err
-      self.values = myAction.values
-      os.unlink(tmpFile.name)
-    else :
+    if 0 < len(self.workers) and 'localWorker' not in self.workers :
+      # Try to send this task to a computeFarm taskManager....
+      #Config.printConfig()
+      taskRequest = {
+        'host'     : Config.config['GLOBAL']['taskManager']['host'],
+        'port'     : Config.config['GLOBAL']['taskManager']['port'],
+        'type'     : "taskRequest",
+        'taskName' : self.task.name,
+        'workers'  : self.workers,
+        'actions'  : self.actions,
+        'env'      : self.env,
+        'dir'      : self.baseDir,
+        'timeOut'  : 100,
+        'logPath'  : 'stdout',
+        'verbose'  : False
+      }
+      print("==============")
+      print(yaml.dump(taskRequest))
+      print("==============")
       tmSocket = tcpTMConnection(taskRequest)
-      tmStdout = ""
-      tmResult = 1
-      if tmSocket :
-        if tcpTMSentRequest(taskRequest, tmSocket) :
-          tmStdout, tmResult = tcpTMCollectResults(tmSocket)
-      self.result = tmResult
-      self.out    = tmStdout
-      self.err    = ""
-      # self.values = ???
+      if tmSocket and tcpTMSentRequest(taskRequest, tmSocket) :
+        resultsArray = []
+        self.result = tcpTMCollectResults(tmSocket, resultsArray)
+        self.out    = "\n".join(resultsArray)
+        self.err    = ""
+        # self.values = ???
+        return 
+
+    # that did not work or we only have the localWorker....
+    # ... so lob it over the fence and hope it works!
+    #print(f"WARNING: no valid workers could be found for {self.task}")
+    actionScript = compileActionScript(self.aliases, self.env, self.actions)
+    #print("---------------------------------------")
+    #print(actionScript)
+    #print("---------------------------------------")
+    tmpFile = tempfile.NamedTemporaryFile(prefix='cfdoit-LocalWorkerTask-', delete=False)
+    tmpFile.write(actionScript.encode("utf8"))
+    tmpFile.close()
+    os.chmod(tmpFile.name, 0o755)
+    print(f"Running local workerTask {tmpFile.name} as CmdAction for {self.task}")
+    myAction = CmdAction(tmpFile.name, self.task)
+    myAction.execute(out, err)
+    self.result = myAction.result
+    self.out    = myAction.out
+    self.err    = myAction.err
+    self.values = myAction.values
+    os.unlink(tmpFile.name)
