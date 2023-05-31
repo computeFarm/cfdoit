@@ -127,7 +127,7 @@ class WorkerTask(BaseAction) :
     if 'baseDir'     in actionsDict : self.baseDir = actionsDict['baseDir']
     self.requiredPlatform = None
     if 'requiredPlatform' in actionsDict : 
-      self.requiredPlatform = actionsDict['requriedPlatform']
+      self.requiredPlatform = actionsDict['requiredPlatform']
     self.values  = {}
     self.out     = None
     self.err     = None
@@ -265,21 +265,22 @@ class WorkerTask(BaseAction) :
       # Try to send this task to a computeFarm taskManager....
       #Config.printConfig()
       taskRequest = {
-        'host'     : Config.config['GLOBAL']['taskManager']['host'],
-        'port'     : Config.config['GLOBAL']['taskManager']['port'],
-        'type'     : "taskRequest",
-        'taskName' : self.task.name,
-        'workers'  : self.workers,
-        'actions'  : self.actions,
-        'env'      : self.env,
-        'dir'      : self.baseDir,
-        'timeOut'  : 100,
-        'logPath'  : 'stdout',
-        'verbose'  : False
+        'host'             : Config.config['GLOBAL']['taskManager']['host'],
+        'port'             : Config.config['GLOBAL']['taskManager']['port'],
+        'type'             : "taskRequest",
+        'taskName'         : self.task.name,
+        'workers'          : self.workers,
+        'actions'          : self.actions,
+        'env'              : self.env,
+        'requiredPlatform' : self.requiredPlatform,
+        'dir'              : self.baseDir,
+        'timeOut'          : 100,
+        'logPath'          : 'stdout',
+        'verbose'          : False
       }
-      print("==============")
-      print(yaml.dump(taskRequest))
-      print("==============")
+      #print("==============")
+      #print(yaml.dump(taskRequest))
+      #print("==============")
       tmSocket = tcpTMConnection(taskRequest)
       if tmSocket and tcpTMSentRequest(taskRequest, tmSocket) :
         resultsArray = []

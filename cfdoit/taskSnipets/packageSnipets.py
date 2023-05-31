@@ -25,7 +25,7 @@ def packageBase(snipetDef, theEnv) :
 @TaskSnipets.addSnipet('linux', 'gitHubDownload', {
   'snipetDeps'  : [ 'packageBase' ],
   'environment' : [
-    { 'doitTaskName' : 'download-extract-$taskName'       },
+    { 'doitTaskName' : 'download-extract.$taskName'       },
     { 'url'          : 'https://github.com/${repoPath}/archive/refs/tags/${repoVersion}.tar.gz' },
     { 'tarFile'      : '${pkgName}-${repoVersion}.tar.gz' },
     { 'dlName'       : '$dlsDir/$tarFile'                 }
@@ -58,7 +58,7 @@ def gitHubDownload(snipetDef, theEnv) :
   'snipetDeps'       : [ 'gitHubDownload' ],
   'platformSpecific' : True,
   'environment'      : [
-    { 'doitTaskName' : 'compile-install-$taskName' }
+    { 'doitTaskName' : 'compile-install.$taskName' }
   ],
   'actions' : [
     'mkdir -p $pkgDir/build',
@@ -77,7 +77,7 @@ def gitHubDownload(snipetDef, theEnv) :
     ]
   },
   'taskDependencies' : [
-    'download-extract-$pkgName-$platform'
+    'download-extract.$pkgName.$platform'
   ],
   'tools' : [ 'cmake', 'ninja' ],
   'useWorkerTask' : True
@@ -102,7 +102,7 @@ def cmakeCompile(snipetDef, theEnv) :
     if 'packages' in deps :
       taskDeps = []
       for aPkgName in deps['packages'] :
-        taskDeps.append(f"compile-install-{aPkgName}-{theEnv['platform']}")
+        taskDeps.append(f"compile-install.{aPkgName}.{theEnv['platform']}")
       snipetExtendList(snipetDef, 'taskDependencies', taskDeps)
 
     fileDeps = []
@@ -122,7 +122,7 @@ def cmakeCompile(snipetDef, theEnv) :
     targets  = []
     if 'libs' in created :
       for aLib in created['libs'] :
-        targets.append(f"${{pkgLibs}}/{aLib}")
+        targets.append(f"${{pkgLibs}}{aLib}")
     if 'includes' in created :
       for anInclude in created['includes'] :
         targets.append(f"${{pkgIncludes}}/{anInclude}")

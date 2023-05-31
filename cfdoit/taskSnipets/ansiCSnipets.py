@@ -31,7 +31,7 @@ def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
     if 'package'  in deps : packages.extend(deps['package'])
     if 'packages' in deps : packages.extend(deps['packages'])
     for aPkgDep in packages :
-      pkgDeps.append(f"compile-install-{aPkgDep}-{theEnv['platform']}")
+      pkgDeps.append(f"compile-install.{aPkgDep}.{theEnv['platform']}")
 
     includes = []
     if 'pkgInclude'  in deps : includes.extend(deps['pkgInclude'])

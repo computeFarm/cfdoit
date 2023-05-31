@@ -86,7 +86,8 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
           'environment' : theEnv,
           'tools'       : requiredTools,
           'workers'     : availableWorkers,
-          'baseDir'     : baseDir
+          'baseDir'     : baseDir,
+          'requiredPlatform' : requiredPlatform
         })
       ]
     else: 
@@ -106,7 +107,7 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
 
   if 'doitTaskName' in theEnv :
     if 'platform' in theEnv :
-      theEnv['doitTaskName'] = theEnv['doitTaskName']+'-'+theEnv['platform']
+      theEnv['doitTaskName'] = theEnv['doitTaskName']+'.'+theEnv['platform']
     if 'actions' in curTask and curTask['actions'] :
       if moduleVerbose : print(f"    defining task {theEnv['doitTaskName']}")
       curTask['basename'] = theEnv['doitTaskName']
