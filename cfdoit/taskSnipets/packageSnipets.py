@@ -71,6 +71,8 @@ def gitHubDownload(snipetDef, theEnv) :
     ],
     'ninja -j $$(nproc) install'
   ],
+  # make sure only ONE task gets done on this machine while this task is running.
+  'estimatedLoad' : 10.0,
   'dependencies' : {
     'files' : [
       'CMakeLists.txt'

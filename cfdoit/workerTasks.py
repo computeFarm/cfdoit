@@ -128,6 +128,9 @@ class WorkerTask(BaseAction) :
     self.requiredPlatform = None
     if 'requiredPlatform' in actionsDict : 
       self.requiredPlatform = actionsDict['requiredPlatform']
+    self.estimatedLoad = 0.5
+    if 'estimatedLoad' in actionsDict :
+      self.estimatedLoad = actionsDict['estimatedLoad']
     self.values  = {}
     self.out     = None
     self.err     = None
@@ -135,13 +138,14 @@ class WorkerTask(BaseAction) :
 
   def __str__(self) :
     selfStrs = yaml.dump({
-      'actions'     : self.actions,
-      'environment' : self.env,
-      'tools'       : self.tools,
-      'workers'     : self.workers,
-      'aliases'     : self.aliases,
-      'platform'    : self.requiredPlatform,
-      'baseDir'     : self.baseDir
+      'actions'       : self.actions,
+      'environment'   : self.env,
+      'tools'         : self.tools,
+      'workers'       : self.workers,
+      'aliases'       : self.aliases,
+      'platform'      : self.requiredPlatform,
+      'estimatedLoad' : self.estimatedLoad,
+      'baseDir'       : self.baseDir
     }).split('\n')
     selfStr = "\n   ".join(selfStrs)
     return f"""WorkerTask(
@@ -273,6 +277,7 @@ class WorkerTask(BaseAction) :
         'actions'          : self.actions,
         'env'              : self.env,
         'requiredPlatform' : self.requiredPlatform,
+        'estimatedLoad'    : self.estimatedLoad,
         'dir'              : self.baseDir,
         'timeOut'          : 100,
         'logPath'          : 'stdout',

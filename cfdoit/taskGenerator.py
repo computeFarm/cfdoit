@@ -76,18 +76,22 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
   #if 'meta' not in curTask : curTask['meta'] = dict()
   #curTask['meta']['environment'] = theEnv
 
+  estimatedLoad = 0.5
+  if 'estimatedLoad' in aDef : estimatedLoad = aDef['estimatedLoad']
+
   if 'actions' in aDef :
     theActions = expandEnvInActions(aName, aDef['actions'], theEnv)
     if 'tools' not in aDef : aDef['tools'] = []
     if 'useWorkerTask' in aDef :
       curTask['actions'] = [
         WorkerTask({
-          'actions'     : theActions,
-          'environment' : theEnv,
-          'tools'       : requiredTools,
-          'workers'     : availableWorkers,
-          'baseDir'     : baseDir,
-          'requiredPlatform' : requiredPlatform
+          'actions'          : theActions,
+          'environment'      : theEnv,
+          'tools'            : requiredTools,
+          'workers'          : availableWorkers,
+          'baseDir'          : baseDir,
+          'requiredPlatform' : requiredPlatform,
+          'estimatedLoad'    : estimatedLoad
         })
       ]
     else: 
