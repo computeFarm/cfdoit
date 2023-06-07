@@ -64,7 +64,7 @@ def gitHubDownload(snipetDef, theEnv) :
     'mkdir -p $pkgDir/build',
     'cd $pkgDir/build',
     [
-      'cmake ..',
+      'cmake $cmakeOptions ..',
       '-D CMAKE_GENERATOR=Ninja',
       '-D CMAKE_PREFIX_PATH=$installPrefix',
       '-D CMAKE_INSTALL_PREFIX=$installPrefix'
@@ -129,3 +129,10 @@ def cmakeCompile(snipetDef, theEnv) :
       for anInclude in created['includes'] :
         targets.append(f"${{pkgIncludes}}/{anInclude}")
     snipetExtendList(snipetDef, 'targets', targets)
+  
+  cmakeOptions = " "
+  if 'cmake' in snipetDef :
+    if 'options' in snipetDef['cmake'] :
+      for anOption, aValue in snipetDef['cmake']['options'].items() :
+        cmakeOptions += f' -D{anOption}={aValue}'
+  snipetDef['environment'].append({'cmakeOptions' : cmakeOptions})
