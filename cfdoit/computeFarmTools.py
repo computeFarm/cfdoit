@@ -7,8 +7,8 @@ This "module" is used by both the newTask and queryWorkers tools.
 
 import json
 import socket
-import sys
-import yaml
+#import sys
+#import yaml
 
 def tcpTMConnection(tmRequest) :
   try :
@@ -19,6 +19,7 @@ def tcpTMConnection(tmRequest) :
     print(f"Connected to the taskManager on {tmRequest['host']}:{tmRequest['port']}")
   except ConnectionRefusedError as err :
     print(f"Could not connect to the taskManager on {tmRequest['host']}:{tmRequest['port']}")
+    print(repr(err))
     return None
   except Exception as err :
     print(f"Exception({err.__class__.__name__}): {str(err)}")
@@ -55,7 +56,7 @@ def tcpTMCloseConnection(tmSocket) :
 
 def tcpTMCollectResults(tmSocket, msgArray) :
   
-  returnCode = 1
+  #returnCode = 1
   moreToRead = True
   while moreToRead :
     print("Reading...")
@@ -71,7 +72,7 @@ def tcpTMCollectResults(tmSocket, msgArray) :
      if 'returncode' in aLine :
        workerJson = json.loads(aLine)
        if 'returncode' in workerJson :
-         returnCode = workerJson['returncode']
+         #returnCode = workerJson['returncode']
          moreToRead = False
        if 'msg' in workerJson :
         if msgArray : msgArray.append(workerJson['msg'])

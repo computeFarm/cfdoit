@@ -3,17 +3,17 @@ Task snipets used for downloading, extracting, compiling and then installing
 GitHub packages.
 """
 
-import yaml
+#import yaml
 
 from cfdoit.taskSnipets.dsl import TaskSnipets, snipetExtendList
 
 @TaskSnipets.addSnipet('linux', 'packageBase', {
   'snipetDeps'  : [ 'buildBase' ],
   'environment' : [
-    { 'pkgDir'  : '$pkgsDir/$pkgName' }
+    { 'pkgDir'  : '$pkgsDir/$taskName' }
   ]
 })
-def packageBase(snipetDef, theEnv) :
+def packageBase(snipetDef, theEnv, theTasks) :
   """
   This snipet will be merged into ALL other package snipets.
 
@@ -27,7 +27,7 @@ def packageBase(snipetDef, theEnv) :
   'environment' : [
     { 'doitTaskName' : 'download-extract.$taskName'       },
     { 'url'          : 'https://github.com/${repoPath}/archive/refs/tags/${repoVersion}.tar.gz' },
-    { 'tarFile'      : '${pkgName}-${repoVersion}.tar.gz' },
+    { 'tarFile'      : '${taskName}-${repoVersion}.tar.gz' },
     { 'dlName'       : '$dlsDir/$tarFile'                 }
   ],
   'actions' : [
@@ -41,7 +41,7 @@ def packageBase(snipetDef, theEnv) :
   'tools'     : [ 'curl', 'tar'                  ],
   'useWorkerTask' : True
 })
-def gitHubDownload(snipetDef, theEnv) :
+def gitHubDownload(snipetDef, theEnv, theTasks) :
   """
   download and extract the *.tar.gz sources from a GitHub repository
 
@@ -79,12 +79,12 @@ def gitHubDownload(snipetDef, theEnv) :
     ]
   },
   'taskDependencies' : [
-    'download-extract.$pkgName.$platform'
+    'download-extract.$taskName.$platform'
   ],
   'tools' : [ 'cmake', 'ninja' ],
   'useWorkerTask' : True
 })
-def cmakeCompile(snipetDef, theEnv) :
+def cmakeCompile(snipetDef, theEnv, theTasks) :
   """
   Perform a "standard" CMake compile and install
 

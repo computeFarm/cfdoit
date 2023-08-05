@@ -5,29 +5,28 @@ data to automatically generate the required tasks.
 
 import copy
 import os
-import platform
-import sys
+#import sys
 import yaml
 
-from doit.task import dict_to_task
+# from doit.task import dict_to_task
 
 from cfdoit.config import Config
-from cfdoit.taskSnipets.dsl import (
-  TaskSnipets, 
-  expandEnvInEnvironment, expandEnvInActions, 
-  expandEnvInUptodates, expandEnvInList
+from cfdoit.taskSnipets.dsl import ( TaskSnipets )
+from cfdoit.envHelpers import (
+  expandEnvInEnvironment,
+  expandEnvInActions, 
+  expandEnvInUptodates,
+  expandEnvInList
 )
-import cfdoit.taskSnipets.ansiCSnipets
-import cfdoit.taskSnipets.packageSnipets
+
 from cfdoit.workerTasks import WorkerTask
 
 moduleVerbose = True
-#moduleVerbose = False
+# moduleVerbose = False
 
 environments = {}
-theSnipets   = None
 
-def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
+def buildTasksFromDef(osType, aName, aDef, theEnv, theTasks) :
   """
   The core task generator method which recursively generates tasks given a tree
   of taskSnipet dependencies.
@@ -37,16 +36,20 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
   # We build deeply first so that theEnv is complete
   if 'snipetDeps' in aDef :
     for aSnipetName in aDef['snipetDeps'] :
-      if aSnipetName in theSnipets :
+      if aSnipetName in TaskSnipets.theSnipets[osType] :
         buildTasksFromDef(
-          aSnipetName, theSnipets[aSnipetName], theEnv, theTasks
+          osType,
+          aSnipetName,
+          TaskSnipets.theSnipets[osType][aSnipetName],
+          theEnv,
+          theTasks
         )
 
   #print(yaml.dump(theEnv))
 
   # Now we run this snipet's function
   if moduleVerbose : print(f"    running {aName}'s snipet function")
-  aDef['snipetFunc'](aDef, theEnv)
+  aDef['snipetFunc'](aDef, theEnv, theTasks)
 
   # now check that there *are* available workers for this task...
   requiredTools = []
@@ -72,7 +75,8 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
 
   curTask = {}
 
-  taskEnvironment = expandEnvInEnvironment(aName, aDef, theEnv)
+  expandEnvInEnvironment(aName, aDef, theEnv)
+  #taskEnvironment = expandEnvInEnvironment(aName, aDef, theEnv)
   #if 'meta' not in curTask : curTask['meta'] = dict()
   #curTask['meta']['environment'] = theEnv
 
@@ -118,7 +122,7 @@ def buildTasksFromDef(aName, aDef, theEnv, theTasks) :
       theTasks.append(curTask)
   if moduleVerbose : print(f"<<< building task from {aName}")
 
-def mergeTaskDef(aName, aDef, theEnv) :
+def mergeTaskDef(osType, aName, aDef, theEnv) :
   """
   Merge taskSnipet's definition into the base task's definition
   """
@@ -128,79 +132,40 @@ def mergeTaskDef(aName, aDef, theEnv) :
     if isinstance(defEnv, dict) : aDef['environment'] = [ defEnv ]
   if 'taskSnipet' in aDef :
     aSnipetName = aDef['taskSnipet']
-    if aSnipetName in theSnipets :
+    if aSnipetName in TaskSnipets.theSnipets[osType] :
       taskName = aSnipetName
-      Config.mergeData(aDef, theSnipets[aSnipetName], '.')
+      Config.mergeData(
+        aDef, TaskSnipets.theSnipets[osType][aSnipetName], '.'
+      )
   return taskName
 
-def buildPlatformTasksFromDef(aName, aDef, theEnv, theTasks) :
-  buildConf = Config.config['GLOBAL']['build']
-  platforms = []
-  if 'platformSpecific' in aDef and 'platforms' in buildConf :
-    platforms.extend(buildConf['platforms'])
-  else :
-    platforms.append('any')
-
-  for aPlatform in platforms :
-    if not WorkerTask.canBuildOn(aPlatform) : continue
-    
-    platformEnv = copy.deepcopy(theEnv)
-    platformDef = copy.deepcopy(aDef)
-
-    platformEnv['platform'] = aPlatform
-    platformDef['platform'] = aPlatform
-
-    buildTasksFromDef(aName, platformDef, platformEnv, theTasks)
-
-def gen_packageTasks(pkgName, pkgDef, theTasks) :
+def gen_TasksFromRootTask(platform, taskName, taskDef, theTasks) :
   """
-  Generate the doit tasks required to download and install a given package.
+  Generate the doit tasks required to build a root task.
   """
-  if moduleVerbose : print(f"working on package {pkgName}")
-  theEnv = {
-    'taskName' : pkgName,
-    'pkgName'  : pkgName
-  }
-  if 'environment' in pkgDef :
-    for aKey, aValue in pkgDef['environment'].items() :
-      theEnv[aKey] = aValue
-  taskName = mergeTaskDef(pkgName, pkgDef, theEnv)
-  buildPlatformTasksFromDef(taskName, pkgDef, theEnv, theTasks)
-  if 'doitTaskName' in theEnv : return theEnv['doitTaskName']
-  return None
 
-def gen_projectTasks(projName, projDef, theTasks) :
-  """
-  Generate the doit tasks required to build a given project.
+  if moduleVerbose : print(f"working on root task {taskName}")
 
-  (At the moment this build process is focused on building ANSI-C commands).
-  """
-  if moduleVerbose : print(f"working on project {projName}")
+  platformParts = platform.split('-')
+  osType        = platformParts[0]
+  cpuType       = platformParts[1]
 
-  """
-  if 'src' in projDef :
-    for aSrcName, aSrcDef in projDef['src'].items() :
-      theEnv = {
-        'projName'    : projName,
-        'taskName'    : aSrcName,
-        'srcName'     : aSrcName,
-      }
-      if 'environment' in aSrcDef :
-        for aKey, aValue in aSrcDef['environment'].items() :
-          theEnv[aKey] = aValue
-      taskName = mergeTaskDef(aSrcName, aSrcDef, theEnv)+':'+aSrcName
-      buildPlatformTasksFromDef(taskName, aSrcDef, theEnv, theTasks)
-  """
+  taskDef['platform'] = platform
+  taskDef['osType']   = osType
+  taskDef['cpuType']  = cpuType
+  taskDef['taskName'] = taskName
 
   theEnv = {
-    'taskName' : projName,
-    'projName' : projName,
+    'taskName' : taskName,
+    'platform' : platform,
+    'osType'   : osType,
+    'cpuType'  : cpuType
   }
-  if 'environment' in projDef :
-    for aKey, aValue in projDef['environment'].items() :
+  if 'environment' in taskDef :
+    for aKey, aValue in taskDef['environment'].items() :
       theEnv[aKey] = aValue
-  taskName = mergeTaskDef(projName, projDef, theEnv)
-  buildPlatformTasksFromDef(taskName, projDef, theEnv, theTasks)
+  mergedTaskName = mergeTaskDef(osType, taskName, taskDef, theEnv)
+  buildTasksFromDef(osType, mergedTaskName, taskDef, theEnv, theTasks)
   if 'doitTaskName' in theEnv : return theEnv['doitTaskName']
   return None
 
@@ -211,28 +176,35 @@ def task_genTasks() :
   The main doit task which generates all `cfdoit` tasks required to build a
   project.
   """
-  global theSnipets
-  if theSnipets is None :
-    theSnipets = TaskSnipets.taskSnipets
-    thePlatform = platform.system().lower()
-    if thePlatform not in theSnipets : theSnipets[thePlatform] = {}
-    theSnipets = theSnipets[thePlatform]
 
   projDesc   = Config.descriptions
 
   theTasks     = []
   allTaskNames = []
-  if 'packages' in projDesc :
-    for aPkgName, aPkgDef in projDesc['packages'].items() :
-      theTaskName = gen_packageTasks(aPkgName, aPkgDef, theTasks)
-      if theTaskName : allTaskNames.append(theTaskName)
-      if moduleVerbose : print("")
 
-  if 'projects' in projDesc :
-    for aProjName, aProjDef in projDesc['projects'].items() :
-      theTaskName = gen_projectTasks(aProjName, aProjDef, theTasks)
-      if theTaskName : allTaskNames.append(theTaskName)
-      if moduleVerbose : print("")
+  buildConf = Config.config['GLOBAL']['build']
+  platforms = []
+  if 'platforms' in buildConf :
+    platforms.extend(buildConf['platforms'])
+  print(platforms)
+  for aPlatform in platforms :
+    if not WorkerTask.canBuildOn(aPlatform) : continue
+    
+    if 'packages' in projDesc :
+      for aPkgName, aPkgDef in projDesc['packages'].items() :
+        theTaskName = gen_TasksFromRootTask(
+          aPlatform, aPkgName, copy.deepcopy(aPkgDef), theTasks
+        )
+        if theTaskName : allTaskNames.append(theTaskName)
+        if moduleVerbose : print("")
+
+    if 'projects' in projDesc :
+      for aProjName, aProjDef in projDesc['projects'].items() :
+        theTaskName = gen_TasksFromRootTask(
+          aPlatform, aProjName, copy.deepcopy(aProjDef), theTasks
+        )
+        if theTaskName : allTaskNames.append(theTaskName)
+        if moduleVerbose : print("")
 
   if allTaskNames : 
     theTasks.append({

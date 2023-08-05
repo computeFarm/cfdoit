@@ -5,15 +5,16 @@ A task snipet consists of a Python function, `snipetFunc` and a related Python
 dict/object, `snipetDef`.
 
 A task snipet is defined using the `@TaskSnipet.addSnipet` decorator (defined in
-`cfdoit.taskSnipets.dsl.TaskSnipets`). This decorator takes a `platformName`,
+`cfdoit.taskSnipets.dsl.TaskSnipets`). This decorator takes a `osTYpe`,
 `snipetName`, `snipetDef` and a function definition (`snipetFunc`). There can be
 task snipets of the same `snipetName` which are specialized to different
-platforms (`linux`, ...).
+osTypes (`linux`, ...).
 
-The defined `snipetFunc` MUST take two arguments: `snipetDef` and `theEnv`.  The
-`snipetDef` argument is the predefined `snipetDef` and `theEnv` argument is an
-ordered list of dict/objects containing any environmental variables required to
-fully define a given `doit` task.
+The defined `snipetFunc` MUST take three arguments: `snipetDef`, `theEnv`, and
+`theTasks`.  The `snipetDef` argument is the predefined `snipetDef`, `theEnv`
+argument is an ordered list of dict/objects containing any environmental
+variables required to fully define a given `doit` task, and, finally, `theTasks`
+is an array of `doit` tasks to be created.
 
 `doit` task specification proceeds by recursively expanding environment
 variables in both later environment dicts/objects and/or `snipetDef` values

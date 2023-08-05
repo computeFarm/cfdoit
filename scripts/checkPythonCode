@@ -1,0 +1,19 @@
+#!/bin/bash
+
+reset
+
+echo "---------------------------------------------------------------------"
+echo PyFlakes checks:
+echo ""
+.venv/bin/python -m pyflakes cfdoit
+#.venv/bin/python -m flake8 \
+#  --indent-size 2 \
+#  --ignore E201,E202,E203,E302 \
+#  cfdoit
+echo ""
+echo "---------------------------------------------------------------------"
+#echo MyPy checks:
+#echo ""
+#.venv/bin/python -m mypy cfdoit
+#echo ""
+#echo "---------------------------------------------------------------------"

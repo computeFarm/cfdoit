@@ -1,7 +1,7 @@
 
 import os
 import sys
-import yaml
+#import yaml
 
 from doit.cmd_base import ModuleTaskLoader
 from doit.doit_cmd import DoitConfig, DoitMain

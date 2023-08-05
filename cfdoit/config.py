@@ -1,7 +1,6 @@
 
 from collections import defaultdict
 import copy
-import glob
 import importlib.resources
 import os
 import yaml

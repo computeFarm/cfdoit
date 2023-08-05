@@ -20,3 +20,9 @@ cfdoit = "cfdoit:cli.cli"
 requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
+[tool.pdm.dev-dependencies]
+dev = [
+    "flake8>=6.1.0",
+    "mypy>=1.4.1",
+    "types-PyYAML>=6.0.12.11",
+]

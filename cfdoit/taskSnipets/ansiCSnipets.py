@@ -2,10 +2,11 @@
 Task snipets used for compiling, linking and then installing ANSI-C source code.
 """
 import os
-import yaml
+#import yaml
 
-from cfdoit.taskSnipets.dsl import (
-  TaskSnipets, expandEnvInStr, expandEnvInList, findEnvInSnipetDef
+from cfdoit.taskSnipets.dsl import ( TaskSnipets )
+from cfdoit.envHelpers import ( 
+  expandEnvInStr, expandEnvInList, findEnvInSnipetDef
 )
 
 def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
@@ -86,7 +87,7 @@ def collectAnsiCDependencies(snipetName, snipetDef, theEnv) :
   ],
   'useWorkerTask' : True
 })
-def srcBase(snipetDef, theEnv) :
+def srcBase(snipetDef, theEnv, theTasks) :
   """
   This snipet will be merged into ALL other (local) source snipets.
 
@@ -110,7 +111,7 @@ def srcBase(snipetDef, theEnv) :
   'tools'   : [ 'g++' ],
   'useWorkerTask' : True
 })
-def gppCompile(snipetDef, theEnv) :
+def gppCompile(snipetDef, theEnv, theTasks) :
   """
   Perform a "standard" gcc compile
 
@@ -141,7 +142,7 @@ def gppCompile(snipetDef, theEnv) :
   'platformSpecific' : True,
   'environment'      : [
     { 'doitTaskName' : 'link-$taskName'      },
-    { 'out'          : '$buildDir/$projName' },
+    { 'out'          : '$buildDir/$taskName' },
     { 'LINKFLAGS'    : ' '                   },
   ],
   'actions' : [
@@ -151,7 +152,7 @@ def gppCompile(snipetDef, theEnv) :
   'tools'   : [ 'g++', 'install' ],
   'useWorkerTask' : True
 })
-def gppInstallCommand(snipetDef, theEnv) :
+def gppInstallCommand(snipetDef, theEnv, theTasks) :
   """
   Perform the creation and install of a "standard" gcc command.
 
@@ -193,7 +194,8 @@ def gppInstallCommand(snipetDef, theEnv) :
   'tool' : [ 'ar', 'install' ],
   'useWorkerTask' : True
 })
-def gccInstallStaticLibrary(snipetDef, theEnv) :
+def gccInstallStaticLibrary(snipetDef, theEnv, theTasks) :
   """
   Perform the creation and install of a "standard" static library
   """
+  pass
