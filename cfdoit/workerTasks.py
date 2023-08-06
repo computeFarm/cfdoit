@@ -37,6 +37,10 @@ class WInfo(Info) :
     tasks = dict([(t.name, t) for t in self.task_list])
     printer = pprint.PrettyPrinter(indent=4, stream=self.outstream)
 
+    if task_name not in tasks :
+      msg = '`winfo` failed to find the task [{}]'.format(task_name)
+      raise InvalidCommand(msg)
+
     task = tasks[task_name]
     task_attrs = (
       ('file_dep', 'list'),

@@ -69,9 +69,11 @@ def drawDiagram(snipetDef, theEnv, theTasks) :
     }
   ],
   'actions' : [
+    'cd $latexDir',
     'pygmentize -f latex -l cpp -o $out $in'
   ],
   'tool' : [ 'pygments' ],
+  'baseDir' : '$latexDir',
   'useWorkerTask' : True
 })
 def pygmentizeCodeChunk(snipetDef, theEnv, theTasks) :

@@ -13,6 +13,7 @@ import yaml
 from cfdoit.config import Config
 from cfdoit.taskSnipets.dsl import ( TaskSnipets )
 from cfdoit.envHelpers import (
+  expandEnvInStr,
   expandEnvInEnvironment,
   expandEnvInActions, 
   expandEnvInUptodates,
@@ -213,6 +214,19 @@ def task_genTasks() :
       'task_dep' : allTaskNames
     })
 
+    subTasks = {}
+    for aTaskName in allTaskNames :
+      aSubTaskName = aTaskName.split('-')[0]
+      if aSubTaskName not in subTasks : subTasks[aSubTaskName] = []
+      subTasks[aSubTaskName].append(aTaskName)
+    
+    for aSubTaskName, someSubTasks in subTasks.items() :
+      theTasks.append({
+        'basename' : aSubTaskName,
+        'actions'  : [ ], # nothing to do... only task dependencies
+        'task_dep' : someSubTasks
+      })
+      
   if moduleVerbose :
     print("---------------------------------------------------------------------")
 
